@@ -38,9 +38,9 @@ const TOPIC_SUGGESTIONS = [
 ]
 
 const INITIAL_NODES: DynamicNode[] = [
-  { id: "node-pc-a", type: "pc", label: "PC A", x: 280, y: 440, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
-  { id: "node-sw", type: "switch", label: "Switch", x: 600, y: 220 },
-  { id: "node-pc-b", type: "pc", label: "PC B", x: 920, y: 440, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
+  { id: "node-pc-a", type: "pc", label: "PC A", x: 300, y: 480, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
+  { id: "node-sw", type: "switch", label: "Switch", x: 640, y: 240 },
+  { id: "node-pc-b", type: "pc", label: "PC B", x: 980, y: 480, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
 ]
 
 const INITIAL_LINKS: DynamicLink[] = [
@@ -160,8 +160,8 @@ function BuilderContent() {
       id,
       type,
       label: `${type.toUpperCase()} ${nodes.length + 1}`,
-      x: 600,
-      y: 325,
+      x: 640,
+      y: 360,
     }
     setNodes([...nodes, newNode])
     setSelectedNodeId(id)
