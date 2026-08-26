@@ -88,6 +88,7 @@ function BuilderContent() {
   const [nodes, setNodes] = useState<DynamicNode[]>(INITIAL_NODES)
   const [links, setLinks] = useState<DynamicLink[]>(INITIAL_LINKS)
   const [steps, setSteps] = useState<DynamicStep[]>(INITIAL_STEPS)
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null)
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedStepIndex, setSelectedStepIndex] = useState(0)
@@ -114,6 +115,18 @@ function BuilderContent() {
         setNodes(res.data.nodes || [])
         setLinks(res.data.links || [])
         setSteps(res.data.steps || [])
+
+        // Store snapshot of clean loaded state
+        setLastSavedSnapshot(
+          JSON.stringify({
+            title: res.data.title,
+            topic: res.data.topic,
+            description: res.data.description || "",
+            nodes: res.data.nodes || [],
+            links: res.data.links || [],
+            steps: res.data.steps || [],
+          })
+        )
       } else {
         setStatusMessage({ type: "error", text: "No se pudo cargar la animación solicitada." })
       }
@@ -134,6 +147,7 @@ function BuilderContent() {
     setSelectedNodeId(null)
     setSelectedStepIndex(0)
     setIsPreviewOpen(false)
+    setLastSavedSnapshot(null)
     setStatusMessage({ type: "success", text: "Lienzo reiniciado para una nueva animación." })
     setTimeout(() => setStatusMessage(null), 3000)
     window.history.replaceState(null, "", "/builder")
@@ -255,6 +269,17 @@ function BuilderContent() {
 
     if (res.success) {
       if (res.id) setAnimationId(res.id)
+      // Update saved snapshot
+      setLastSavedSnapshot(
+        JSON.stringify({
+          title,
+          topic,
+          description,
+          nodes,
+          links,
+          steps,
+        })
+      )
       setStatusMessage({
         type: "success",
         text: animationId
@@ -266,6 +291,20 @@ function BuilderContent() {
       setStatusMessage({ type: "error", text: res.error || "Error al guardar" })
     }
   }
+
+  // Dirty state tracking
+  const currentSnapshot = JSON.stringify({
+    title,
+    topic,
+    description,
+    nodes,
+    links,
+    steps,
+  })
+  const isEditing = Boolean(animationId)
+  const hasUnsavedChanges = isEditing
+    ? lastSavedSnapshot === null || currentSnapshot !== lastSavedSnapshot
+    : true
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null
   const selectedStep = steps[selectedStepIndex] || null
@@ -389,18 +428,30 @@ function BuilderContent() {
             {isPreviewOpen ? "Editor" : "Previsualizar"}
           </Button>
 
+          {/* Save / Update Button */}
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={isSaving}
-            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
+            disabled={isSaving || (isEditing && !hasUnsavedChanges)}
+            className={`gap-1.5 text-xs h-7 font-semibold transition-all ${
+              isEditing && !hasUnsavedChanges
+                ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
+                : "cursor-pointer"
+            }`}
+            title={
+              isEditing && !hasUnsavedChanges
+                ? "No hay cambios pendientes por guardar"
+                : isEditing
+                ? "Actualizar cambios en Supabase"
+                : "Guardar y publicar animación"
+            }
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            {animationId ? "Actualizar" : "Guardar y Publicar"}
+            {isEditing ? (hasUnsavedChanges ? "Actualizar" : "Actualizado") : "Guardar y Publicar"}
           </Button>
         </div>
       </div>
