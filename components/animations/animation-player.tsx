@@ -292,7 +292,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
             "min-h-0 rounded-lg border border-border/50 bg-card overflow-hidden relative",
             isFullscreen && "flex-1"
           )}
-          style={{ flex: "1 1 0", maxHeight: isFullscreen ? "none" : "55vh" }}
+          style={{ flex: "1 1 0", minHeight: "360px", maxHeight: isFullscreen ? "none" : "55vh" }}
         >
           {/* Zoomed content */}
           <div
