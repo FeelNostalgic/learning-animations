@@ -102,12 +102,11 @@ export function Canvas({
   // Background Pan Handling
   const handleBackgroundPointerDown = (e: React.PointerEvent) => {
     if (e.button === 0 || e.button === 1) {
-      if (connectingSourceId) {
-        setConnectingSourceId(null)
-      }
       setIsPanning(true)
       setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
-      onSelectNode(null)
+      if (!connectingSourceId) {
+        onSelectNode(null)
+      }
       setContextMenu(null)
     }
   }
@@ -141,7 +140,7 @@ export function Canvas({
     setDragNodeId(null)
   }
 
-  // Node Drag Start
+  // Node Drag Start or Node Target Click for Connection
   const handleNodePointerDown = (nodeId: string, e: React.PointerEvent) => {
     e.stopPropagation()
     if (e.button === 2) return // Ignore right-click
@@ -235,10 +234,14 @@ export function Canvas({
     >
       {/* ── Active Connecting Mode Helper Banner ─────────────────── */}
       {connectingSourceId && (
-        <div className="absolute left-6 top-6 z-20 flex items-center gap-3 rounded-xl border border-amber-500/40 bg-card/95 px-3.5 py-2 shadow-xl backdrop-blur-md animate-pulse">
-          <div className="flex items-center gap-2 text-xs font-semibold text-amber-500">
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute left-6 top-6 z-30 flex items-center gap-3 rounded-xl border border-amber-500/50 bg-card/95 px-4 py-2 shadow-xl backdrop-blur-md animate-pulse"
+        >
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-500">
             <Link2 className="h-4 w-4" />
-            <span>Modo Conexión: Haz clic en el nodo de destino</span>
+            <span>Modo Conexión: Haz clic en el nodo destino</span>
           </div>
           <Button
             variant="ghost"
@@ -256,7 +259,10 @@ export function Canvas({
       )}
 
       {/* ── Zoom Controls Floating Bar ──────────────────────────── */}
-      <div className="absolute right-6 top-6 z-10 flex items-center gap-1 rounded-xl border border-border bg-card/90 p-1.5 shadow-lg backdrop-blur-md">
+      <div
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute right-6 top-6 z-10 flex items-center gap-1 rounded-xl border border-border bg-card/90 p-1.5 shadow-lg backdrop-blur-md"
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -293,26 +299,37 @@ export function Canvas({
       {contextMenu && (
         <div
           style={{ left: contextMenu.x, top: contextMenu.y }}
-          className="absolute z-50 min-w-[170px] rounded-xl border border-border bg-card/95 p-1.5 shadow-2xl backdrop-blur-md text-xs"
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
+          className="absolute z-50 min-w-[180px] rounded-xl border border-border bg-card/98 p-1.5 shadow-2xl backdrop-blur-md text-xs"
         >
+          <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/80 mb-1">
+            Nodo: {nodeMap.get(contextMenu.nodeId)?.label || "Opciones"}
+          </div>
           <button
-            onClick={() => {
-              setConnectingSourceId(contextMenu.nodeId)
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              const sourceId = contextMenu.nodeId
               setContextMenu(null)
+              setConnectingSourceId(sourceId)
+              onSelectNode(sourceId)
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-foreground hover:bg-accent transition-colors text-left font-medium"
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-foreground hover:bg-accent transition-colors text-left font-medium cursor-pointer"
           >
             <Link2 className="h-3.5 w-3.5 text-primary" />
             <span>Conectar a otro nodo...</span>
           </button>
           <div className="border-t border-border my-1" />
           <button
-            onClick={() => {
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
               onDeleteNode(contextMenu.nodeId)
               setContextMenu(null)
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left font-semibold"
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left font-semibold cursor-pointer"
           >
             <Trash2 className="h-3.5 w-3.5" />
             <span>Eliminar nodo</span>
