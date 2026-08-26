@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useTheme } from "next-themes"
 import {
   NETWORK_DEVICE_STYLE,
@@ -111,6 +111,29 @@ export function Canvas({
     }
   }
 
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  // Transform screen client (X, Y) into exact SVG viewBox coordinates
+  const getSvgCoordinates = useCallback((clientX: number, clientY: number) => {
+    if (!svgRef.current) return null
+    const svg = svgRef.current
+    const ctm = svg.getScreenCTM()
+    if (ctm) {
+      const pt = svg.createSVGPoint()
+      pt.x = clientX
+      pt.y = clientY
+      const transformed = pt.matrixTransform(ctm.inverse())
+      return { x: transformed.x, y: transformed.y }
+    }
+
+    // Fallback if getScreenCTM is unavailable
+    const rect = svg.getBoundingClientRect()
+    return {
+      x: ((clientX - rect.left) / rect.width) * 1200,
+      y: ((clientY - rect.top) / rect.height) * 650,
+    }
+  }, [])
+
   const handlePointerMove = (e: React.PointerEvent) => {
     // 1. Pan canvas background
     if (isPanning) {
@@ -123,14 +146,14 @@ export function Canvas({
 
     // 2. Drag node
     if (!dragNodeId || !svgRef.current) return
-    const rect = svgRef.current.getBoundingClientRect()
+    const svgCoords = getSvgCoordinates(e.clientX, e.clientY)
+    if (!svgCoords) return
 
-    const x = Math.round(
-      Math.max(40, Math.min(1160, ((e.clientX - rect.left - pan.x) / zoom) * (1280 / rect.width * zoom)))
-    )
-    const y = Math.round(
-      Math.max(40, Math.min(610, ((e.clientY - rect.top - pan.y) / zoom) * (720 / rect.height * zoom)))
-    )
+    const targetX = svgCoords.x + dragOffsetRef.current.x
+    const targetY = svgCoords.y + dragOffsetRef.current.y
+
+    const x = Math.round(Math.max(40, Math.min(1160, targetX)))
+    const y = Math.round(Math.max(40, Math.min(610, targetY)))
 
     onUpdateNodePosition(dragNodeId, x, y)
   }
@@ -156,6 +179,18 @@ export function Canvas({
     onSelectNode(nodeId)
     setDragNodeId(nodeId)
     ;(e.target as Element).setPointerCapture(e.pointerId)
+
+    // Calculate exact grab offset so node doesn't snap to center
+    const svgCoords = getSvgCoordinates(e.clientX, e.clientY)
+    const node = nodeMap.get(nodeId)
+    if (svgCoords && node) {
+      dragOffsetRef.current = {
+        x: node.x - svgCoords.x,
+        y: node.y - svgCoords.y,
+      }
+    } else {
+      dragOffsetRef.current = { x: 0, y: 0 }
+    }
   }
 
   // Right-Click Context Menu on Node
