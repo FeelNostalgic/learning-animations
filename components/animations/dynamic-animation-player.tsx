@@ -21,7 +21,7 @@ interface DynamicAnimationPlayerProps {
   animation: DynamicAnimationData
 }
 
-const VB = { w: 800, h: 460 }
+const VB = { w: 1280, h: 720 }
 
 export function DynamicAnimationPlayer({ animation }: DynamicAnimationPlayerProps) {
   const svgRef = useRef<SVGSVGElement>(null)
@@ -175,7 +175,7 @@ export function DynamicAnimationPlayer({ animation }: DynamicAnimationPlayerProp
 
       <svg
         ref={svgRef}
-        viewBox="0 0 800 460"
+        viewBox="0 0 1280 720"
         className="h-full w-full"
         xmlns="http://www.w3.org/2000/svg"
       >

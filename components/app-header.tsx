@@ -10,10 +10,13 @@ import { createClient } from "@/lib/supabase/client"
 import { signOut } from "@/app/auth/actions"
 import { type User } from "@supabase/supabase-js"
 
+const AUTH_PATHS = ["/login", "/signup", "/forgot-password"]
+
 export function AppHeader() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dynamicTitle, setDynamicTitle] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -36,6 +39,24 @@ export function AppHeader() {
     }
   }, [])
 
+  // Listen for dynamic breadcrumb title events from viewers
+  useEffect(() => {
+    const handleSetTitle = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      if (customEvent.detail) {
+        setDynamicTitle(customEvent.detail)
+      }
+    }
+
+    window.addEventListener("set-breadcrumb-title", handleSetTitle)
+    return () => window.removeEventListener("set-breadcrumb-title", handleSetTitle)
+  }, [])
+
+  // Reset dynamic title on navigation
+  useEffect(() => {
+    setDynamicTitle(null)
+  }, [pathname])
+
   // Close menu on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -47,8 +68,8 @@ export function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Don't render header in embed mode
-  if (pathname.startsWith("/embed")) {
+  // Don't render header in embed mode or on auth pages
+  if (pathname.startsWith("/embed") || AUTH_PATHS.includes(pathname)) {
     return null
   }
 
@@ -66,20 +87,17 @@ export function AppHeader() {
   let breadcrumbs: { label: string; href?: string }[] = [{ label: "Inicio", href: "/animations" }]
 
   if (isOfficialDetail) {
-    breadcrumbs.push({ label: officialAnim?.title || "Animación" })
+    breadcrumbs.push({ label: officialAnim?.title || dynamicTitle || "Animación" })
   } else if (isMyAnimationsIndex) {
     breadcrumbs.push({ label: "Mis Animaciones" })
   } else if (isMyAnimationDetail) {
     breadcrumbs.push({ label: "Mis Animaciones", href: "/my-animations" })
-    breadcrumbs.push({ label: "Ver Animación" })
+    breadcrumbs.push({ label: dynamicTitle || "Cargando animación..." })
   } else if (isBuilder) {
     breadcrumbs.push({ label: "Editor" })
-  } else if (pathname === "/login") {
-    breadcrumbs.push({ label: "Iniciar Sesión" })
-  } else if (pathname === "/signup") {
-    breadcrumbs.push({ label: "Crear Cuenta" })
-  } else if (pathname === "/forgot-password") {
-    breadcrumbs.push({ label: "Recuperar Contraseña" })
+    if (dynamicTitle && dynamicTitle !== "Nueva Animación de Red") {
+      breadcrumbs.push({ label: dynamicTitle })
+    }
   }
 
   return (
@@ -115,74 +133,71 @@ export function AppHeader() {
       <div className="flex items-center gap-2">
         <ThemeToggle />
 
-        {/* User Profile Menu */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
-            aria-label="Menú de usuario"
-          >
-            <UserIcon className="h-4 w-4 text-muted-foreground" />
-          </button>
+        {user ? (
+          /* User Profile Dropdown Menu (Logged in only) */
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+              aria-label="Menú de usuario"
+            >
+              <UserIcon className="h-4 w-4 text-muted-foreground" />
+            </button>
 
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 text-xs">
-              {user ? (
-                <>
-                  <div className="border-b border-border px-3 py-2">
-                    <p className="font-semibold text-foreground truncate">
-                      {user.user_metadata?.username ? `@${user.user_metadata.username}` : user.email}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-                  </div>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 text-xs">
+                <div className="border-b border-border px-3 py-2">
+                  <p className="font-semibold text-foreground truncate">
+                    {user.user_metadata?.username ? `@${user.user_metadata.username}` : user.email}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                </div>
 
-                  <div className="py-1">
-                    <Link
-                      href="/my-animations"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-accent transition-colors"
-                    >
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <span>Mis Animaciones</span>
-                    </Link>
-                  </div>
-
-                  <div className="border-t border-border pt-1">
-                    <button
-                      onClick={async () => {
-                        setMenuOpen(false)
-                        await signOut()
-                      }}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left cursor-pointer"
-                    >
-                      <LogOut className="h-3.5 w-3.5" />
-                      <span>Cerrar Sesión</span>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="p-1 space-y-1">
+                <div className="py-1">
                   <Link
-                    href="/login"
+                    href="/my-animations"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-accent transition-colors font-medium"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-accent transition-colors"
                   >
-                    <LogIn className="h-3.5 w-3.5 text-primary" />
-                    <span>Iniciar Sesión</span>
-                  </Link>
-                  <Link
-                    href="/signup"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-accent transition-colors font-medium"
-                  >
-                    <UserPlus className="h-3.5 w-3.5 text-primary" />
-                    <span>Crear Cuenta</span>
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <span>Mis Animaciones</span>
                   </Link>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+
+                <div className="border-t border-border pt-1">
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false)
+                      await signOut()
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left cursor-pointer"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>Cerrar Sesión</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Explicit Auth Buttons (Logged out visitor) */
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+            >
+              <LogIn className="h-3.5 w-3.5 text-primary" />
+              <span>Iniciar Sesión</span>
+            </Link>
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-xs cursor-pointer"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              <span>Crear Cuenta</span>
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   )

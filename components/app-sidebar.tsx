@@ -1,9 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Compass, Layers, PenTool, Network, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { type User } from "@supabase/supabase-js"
 
 interface NavItem {
   label: string
@@ -33,11 +36,32 @@ const NAV_ITEMS: NavItem[] = [
   },
 ]
 
+const AUTH_PATHS = ["/login", "/signup", "/forgot-password"]
+
 export function AppSidebar() {
   const pathname = usePathname()
+  const [user, setUser] = useState<User | null>(null)
 
-  // Do not render sidebar on embed pages
-  if (pathname.startsWith("/embed")) {
+  useEffect(() => {
+    const supabase = createClient()
+
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // Do not render sidebar on embed, auth pages, or for non-logged-in visitors
+  if (pathname.startsWith("/embed") || AUTH_PATHS.includes(pathname) || !user) {
     return null
   }
 

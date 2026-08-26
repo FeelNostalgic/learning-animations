@@ -10,7 +10,17 @@ import { AnimationPlayer } from "@/components/animations/animation-player"
 import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
 import { saveAnimation, getAnimationById } from "@/app/builder/actions"
 import { Button } from "@/components/ui/button"
-import { Save, Eye, CheckCircle2, AlertCircle, Loader2, Tag, PenLine, X } from "lucide-react"
+import {
+  Save,
+  Eye,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Tag,
+  PenLine,
+  X,
+  FilePlus,
+} from "lucide-react"
 import type {
   DynamicAnimationData,
   DynamicNode,
@@ -28,9 +38,9 @@ const TOPIC_SUGGESTIONS = [
 ]
 
 const INITIAL_NODES: DynamicNode[] = [
-  { id: "node-pc-a", type: "pc", label: "PC A", x: 180, y: 320, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
-  { id: "node-sw", type: "switch", label: "Switch", x: 400, y: 140 },
-  { id: "node-pc-b", type: "pc", label: "PC B", x: 620, y: 320, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
+  { id: "node-pc-a", type: "pc", label: "PC A", x: 300, y: 480, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
+  { id: "node-sw", type: "switch", label: "Switch", x: 640, y: 240 },
+  { id: "node-pc-b", type: "pc", label: "PC B", x: 980, y: 480, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
 ]
 
 const INITIAL_LINKS: DynamicLink[] = [
@@ -78,6 +88,7 @@ function BuilderContent() {
   const [nodes, setNodes] = useState<DynamicNode[]>(INITIAL_NODES)
   const [links, setLinks] = useState<DynamicLink[]>(INITIAL_LINKS)
   const [steps, setSteps] = useState<DynamicStep[]>(INITIAL_STEPS)
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null)
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedStepIndex, setSelectedStepIndex] = useState(0)
@@ -104,6 +115,18 @@ function BuilderContent() {
         setNodes(res.data.nodes || [])
         setLinks(res.data.links || [])
         setSteps(res.data.steps || [])
+
+        // Store snapshot of clean loaded state
+        setLastSavedSnapshot(
+          JSON.stringify({
+            title: res.data.title,
+            topic: res.data.topic,
+            description: res.data.description || "",
+            nodes: res.data.nodes || [],
+            links: res.data.links || [],
+            steps: res.data.steps || [],
+          })
+        )
       } else {
         setStatusMessage({ type: "error", text: "No se pudo cargar la animación solicitada." })
       }
@@ -112,6 +135,24 @@ function BuilderContent() {
     fetchAnimation()
   }, [editId])
 
+  // Reset to brand new animation
+  const handleNewAnimation = () => {
+    setAnimationId(null)
+    setTitle("Nueva Animación de Red")
+    setTopic("Acceso a la Red")
+    setDescription("Descripción pedagógica de la animación")
+    setNodes(INITIAL_NODES)
+    setLinks(INITIAL_LINKS)
+    setSteps(INITIAL_STEPS)
+    setSelectedNodeId(null)
+    setSelectedStepIndex(0)
+    setIsPreviewOpen(false)
+    setLastSavedSnapshot(null)
+    setStatusMessage({ type: "success", text: "Lienzo reiniciado para una nueva animación." })
+    setTimeout(() => setStatusMessage(null), 3000)
+    window.history.replaceState(null, "", "/builder")
+  }
+
   // Node operations
   const handleAddNode = (type: NodeType) => {
     const id = `node-${Date.now()}`
@@ -119,8 +160,8 @@ function BuilderContent() {
       id,
       type,
       label: `${type.toUpperCase()} ${nodes.length + 1}`,
-      x: 400,
-      y: 230,
+      x: 640,
+      y: 360,
     }
     setNodes([...nodes, newNode])
     setSelectedNodeId(id)
@@ -228,6 +269,17 @@ function BuilderContent() {
 
     if (res.success) {
       if (res.id) setAnimationId(res.id)
+      // Update saved snapshot
+      setLastSavedSnapshot(
+        JSON.stringify({
+          title,
+          topic,
+          description,
+          nodes,
+          links,
+          steps,
+        })
+      )
       setStatusMessage({
         type: "success",
         text: animationId
@@ -239,6 +291,20 @@ function BuilderContent() {
       setStatusMessage({ type: "error", text: res.error || "Error al guardar" })
     }
   }
+
+  // Dirty state tracking
+  const currentSnapshot = JSON.stringify({
+    title,
+    topic,
+    description,
+    nodes,
+    links,
+    steps,
+  })
+  const isEditing = Boolean(animationId)
+  const hasUnsavedChanges = isEditing
+    ? lastSavedSnapshot === null || currentSnapshot !== lastSavedSnapshot
+    : true
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null
   const selectedStep = steps[selectedStepIndex] || null
@@ -340,28 +406,52 @@ function BuilderContent() {
             </div>
           )}
 
+          {/* New Animation Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNewAnimation}
+            className="gap-1.5 text-xs h-7 font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+            title="Crear una animación en blanco desde cero"
+          >
+            <FilePlus className="h-3.5 w-3.5 text-primary" />
+            <span className="hidden sm:inline">Nueva Animación</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-            className="gap-1.5 text-xs h-7 font-semibold"
+            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
           >
             <Eye className="h-3.5 w-3.5" />
             {isPreviewOpen ? "Editor" : "Previsualizar"}
           </Button>
 
+          {/* Save / Update Button */}
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={isSaving}
-            className="gap-1.5 text-xs h-7 font-semibold"
+            disabled={isSaving || (isEditing && !hasUnsavedChanges)}
+            className={`gap-1.5 text-xs h-7 font-semibold transition-all ${
+              isEditing && !hasUnsavedChanges
+                ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
+                : "cursor-pointer"
+            }`}
+            title={
+              isEditing && !hasUnsavedChanges
+                ? "No hay cambios pendientes por guardar"
+                : isEditing
+                ? "Actualizar cambios en Supabase"
+                : "Guardar y publicar animación"
+            }
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            {animationId ? "Actualizar" : "Guardar y Publicar"}
+            {isEditing ? (hasUnsavedChanges ? "Actualizar" : "Actualizado") : "Guardar y Publicar"}
           </Button>
         </div>
       </div>

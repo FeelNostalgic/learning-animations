@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useTheme } from "next-themes"
 import {
   NETWORK_DEVICE_STYLE,
@@ -111,6 +111,29 @@ export function Canvas({
     }
   }
 
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  // Transform screen client (X, Y) into exact SVG viewBox coordinates
+  const getSvgCoordinates = useCallback((clientX: number, clientY: number) => {
+    if (!svgRef.current) return null
+    const svg = svgRef.current
+    const ctm = svg.getScreenCTM()
+    if (ctm) {
+      const pt = svg.createSVGPoint()
+      pt.x = clientX
+      pt.y = clientY
+      const transformed = pt.matrixTransform(ctm.inverse())
+      return { x: transformed.x, y: transformed.y }
+    }
+
+    // Fallback if getScreenCTM is unavailable
+    const rect = svg.getBoundingClientRect()
+    return {
+      x: ((clientX - rect.left) / rect.width) * 1280,
+      y: ((clientY - rect.top) / rect.height) * 720,
+    }
+  }, [])
+
   const handlePointerMove = (e: React.PointerEvent) => {
     // 1. Pan canvas background
     if (isPanning) {
@@ -123,14 +146,14 @@ export function Canvas({
 
     // 2. Drag node
     if (!dragNodeId || !svgRef.current) return
-    const rect = svgRef.current.getBoundingClientRect()
+    const svgCoords = getSvgCoordinates(e.clientX, e.clientY)
+    if (!svgCoords) return
 
-    const x = Math.round(
-      Math.max(40, Math.min(760, ((e.clientX - rect.left - pan.x) / zoom) * (800 / rect.width * zoom)))
-    )
-    const y = Math.round(
-      Math.max(40, Math.min(420, ((e.clientY - rect.top - pan.y) / zoom) * (460 / rect.height * zoom)))
-    )
+    const targetX = svgCoords.x + dragOffsetRef.current.x
+    const targetY = svgCoords.y + dragOffsetRef.current.y
+
+    const x = Math.round(Math.max(40, Math.min(1240, targetX)))
+    const y = Math.round(Math.max(40, Math.min(680, targetY)))
 
     onUpdateNodePosition(dragNodeId, x, y)
   }
@@ -156,6 +179,18 @@ export function Canvas({
     onSelectNode(nodeId)
     setDragNodeId(nodeId)
     ;(e.target as Element).setPointerCapture(e.pointerId)
+
+    // Calculate exact grab offset so node doesn't snap to center
+    const svgCoords = getSvgCoordinates(e.clientX, e.clientY)
+    const node = nodeMap.get(nodeId)
+    if (svgCoords && node) {
+      dragOffsetRef.current = {
+        x: node.x - svgCoords.x,
+        y: node.y - svgCoords.y,
+      }
+    } else {
+      dragOffsetRef.current = { x: 0, y: 0 }
+    }
   }
 
   // Right-Click Context Menu on Node
@@ -343,7 +378,7 @@ export function Canvas({
 
         <svg
           ref={svgRef}
-          viewBox="0 0 800 460"
+          viewBox="0 0 1280 720"
           preserveAspectRatio="xMidYMid meet"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
@@ -352,6 +387,100 @@ export function Canvas({
           }}
           className="relative h-full w-full select-none"
         >
+          {/* ── Editor Canvas Boundary & Center Guides (Editor only) ── */}
+          <g className="pointer-events-none select-none opacity-45">
+            {/* Canvas Outer Bounding Box */}
+            <rect
+              x="4"
+              y="4"
+              width="1272"
+              height="712"
+              rx="12"
+              fill="none"
+              stroke={C.idle}
+              strokeWidth="1.5"
+              strokeDasharray="6 6"
+            />
+
+            {/* Safe Margin Boundary for Nodes */}
+            <rect
+              x="40"
+              y="40"
+              width="1200"
+              height="640"
+              rx="8"
+              fill="none"
+              stroke={C.idle}
+              strokeWidth="1"
+              strokeDasharray="3 4"
+              opacity="0.3"
+            />
+
+            {/* Boundary Dimension Label */}
+            <text
+              x="16"
+              y="22"
+              fill={C.idle}
+              fontSize="10"
+              fontFamily="var(--font-mono)"
+              fontWeight="600"
+              opacity="0.8"
+            >
+              Lienzo: 1280 × 720 px (16:9)
+            </text>
+
+            {/* Center Vertical Guide */}
+            <line
+              x1="640"
+              y1="4"
+              x2="640"
+              y2="716"
+              stroke={C.active}
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              opacity="0.35"
+            />
+
+            {/* Center Horizontal Guide */}
+            <line
+              x1="4"
+              y1="360"
+              x2="1276"
+              y2="360"
+              stroke={C.active}
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              opacity="0.35"
+            />
+
+            {/* Center Target Indicator */}
+            <g transform="translate(640, 360)">
+              <circle
+                r="16"
+                fill="none"
+                stroke={C.active}
+                strokeWidth="1"
+                opacity="0.5"
+                strokeDasharray="3 3"
+              />
+              <circle r="3" fill={C.active} opacity="0.8" />
+              <line x1="-8" y1="0" x2="8" y2="0" stroke={C.active} strokeWidth="1.5" />
+              <line x1="0" y1="-8" x2="0" y2="8" stroke={C.active} strokeWidth="1.5" />
+              <text
+                x="0"
+                y="28"
+                textAnchor="middle"
+                fill={C.active}
+                fontSize="9"
+                fontFamily="var(--font-mono)"
+                fontWeight="700"
+                opacity="0.75"
+              >
+                CENTRO (640, 360)
+              </text>
+            </g>
+          </g>
+
           {/* Links */}
           {links.map((link) => {
             const source = nodeMap.get(link.source)

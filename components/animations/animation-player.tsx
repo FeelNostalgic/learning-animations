@@ -159,6 +159,12 @@ export function AnimationPlayer({
   }, [speedLabel])
 
   useEffect(() => {
+    if (title && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("set-breadcrumb-title", { detail: title }))
+    }
+  }, [title])
+
+  useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(document.fullscreenElement === playerRef.current)
     }
