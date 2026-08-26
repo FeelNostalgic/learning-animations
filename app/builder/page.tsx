@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { AssetsSidebar } from "@/components/builder/assets-sidebar"
 import { Canvas } from "@/components/builder/canvas"
 import { TimelinePanel } from "@/components/builder/timeline-panel"
@@ -10,7 +8,7 @@ import { AnimationPlayer } from "@/components/animations/animation-player"
 import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
 import { saveAnimation } from "@/app/builder/actions"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Play, Save, Eye, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Save, Eye, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import type {
   DynamicAnimationData,
   DynamicNode,
@@ -58,7 +56,6 @@ const INITIAL_STEPS: DynamicStep[] = [
 ]
 
 export default function BuilderPage() {
-  const router = useRouter()
   const [title, setTitle] = useState("Nueva Animación de Red")
   const [topic, setTopic] = useState("Acceso a la Red")
   const [description, setDescription] = useState("Descripción pedagógica de la animación")
@@ -175,46 +172,28 @@ export default function BuilderPage() {
     }
   }
 
-  const animationMeta = {
-    slug: "preview",
-    title,
-    description,
-    topic,
-    steps,
-  }
-
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* ── Top Header ────────────────────────────────────────────── */}
-      <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 shadow-sm">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/animations"
-            className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver
-          </Link>
-          <div className="h-4 w-px bg-border" />
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-bold text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
-              placeholder="Título de la animación..."
-            />
-            <span className="text-xs text-muted-foreground">en</span>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="rounded-md border border-transparent bg-transparent px-2 py-1 text-xs text-muted-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
-              placeholder="Tema (ej. Acceso a la Red)"
-            />
-          </div>
+    <div className="flex h-full flex-col overflow-hidden bg-background">
+      {/* ── Sub Toolbar ───────────────────────────────────────────── */}
+      <div className="flex h-12 items-center justify-between border-b border-border/80 bg-card/60 px-4 shrink-0">
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-bold text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
+            placeholder="Título de la animación..."
+          />
+          <span className="text-xs text-muted-foreground">en</span>
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            className="rounded-md border border-transparent bg-transparent px-2 py-1 text-xs text-muted-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
+            placeholder="Tema (ej. Acceso a la Red)"
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -237,7 +216,7 @@ export default function BuilderPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-            className="gap-1.5 text-xs"
+            className="gap-1.5 text-xs h-8"
           >
             <Eye className="h-3.5 w-3.5" />
             {isPreviewOpen ? "Modo Editor" : "Previsualizar"}
@@ -247,7 +226,7 @@ export default function BuilderPage() {
             size="sm"
             onClick={handleSave}
             disabled={isSaving}
-            className="gap-1.5 text-xs"
+            className="gap-1.5 text-xs h-8"
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -257,13 +236,13 @@ export default function BuilderPage() {
             Guardar y Publicar
           </Button>
         </div>
-      </header>
+      </div>
 
       {/* ── Main Workspace Body ───────────────────────────────────── */}
       {isPreviewOpen ? (
         <div className="flex flex-1 overflow-hidden p-6">
           <div className="h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-            <AnimationPlayer animation={animationMeta}>
+            <AnimationPlayer steps={steps} title={title}>
               <DynamicAnimationPlayer
                 animation={{
                   title,

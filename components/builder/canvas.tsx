@@ -141,9 +141,9 @@ export function Canvas({
   }
 
   return (
-    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-background p-6">
+    <div className="relative flex flex-1 h-full w-full flex-col items-center justify-center overflow-hidden bg-background">
       {/* Canvas Tool Bar */}
-      <div className="absolute left-6 top-6 z-10 flex items-center gap-2 rounded-xl border border-border bg-card/80 p-2 shadow-lg backdrop-blur-md">
+      <div className="absolute left-6 top-6 z-10 flex items-center gap-2 rounded-xl border border-border bg-card/90 p-2 shadow-lg backdrop-blur-md">
         <Button
           variant={connectingSourceId ? "default" : "outline"}
           size="sm"
@@ -173,13 +173,14 @@ export function Canvas({
         )}
       </div>
 
-      {/* SVG Canvas Board */}
-      <div className="relative aspect-[800/460] w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-        <div className="absolute inset-0 bg-radial-grid opacity-30" />
+      {/* SVG Canvas Board - Maximized full space */}
+      <div className="relative h-full w-full overflow-hidden bg-card/30">
+        <div className="absolute inset-0 bg-radial-grid opacity-30 pointer-events-none" />
 
         <svg
           ref={svgRef}
           viewBox="0 0 800 460"
+          preserveAspectRatio="xMidYMid meet"
           className="relative h-full w-full select-none"
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -240,6 +241,10 @@ export function Canvas({
                 key={node.id}
                 transform={`translate(${node.x}, ${node.y})`}
                 onPointerDown={(e) => handlePointerDown(node.id, e)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectNode(node.id)
+                }}
                 className="cursor-grab active:cursor-grabbing"
               >
                 {/* Active Selection Ring */}
