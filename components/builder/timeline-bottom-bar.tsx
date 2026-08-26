@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Trash2, Clock, Sparkles, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { DynamicStep } from "@/types/dynamic-animation"
@@ -16,6 +16,75 @@ interface TimelineBottomBarProps {
 }
 
 const PIXELS_PER_SECOND = 90 // 1 second = 90px
+
+function StepDurationInput({
+  duration,
+  onUpdateDuration,
+}: {
+  duration: number
+  onUpdateDuration: (newDuration: number) => void
+}) {
+  const [text, setText] = useState(String(duration))
+
+  // Synchronize when duration changes externally (e.g. via drag resize)
+  useEffect(() => {
+    setText(String(duration))
+  }, [duration])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    setText(raw)
+
+    // Allow typing decimals with either dot or comma
+    const normalized = raw.replace(",", ".")
+    const parsed = parseFloat(normalized)
+    if (!isNaN(parsed) && parsed >= 0.1 && parsed <= 120) {
+      onUpdateDuration(+parsed.toFixed(1))
+    }
+  }
+
+  const handleBlur = () => {
+    const normalized = text.replace(",", ".")
+    const parsed = parseFloat(normalized)
+    if (!isNaN(parsed) && parsed >= 0.1 && parsed <= 120) {
+      const formatted = +parsed.toFixed(1)
+      setText(String(formatted))
+      onUpdateDuration(formatted)
+    } else {
+      setText(String(duration))
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.stopPropagation()
+    if (e.key === "Enter") {
+      handleBlur()
+      ;(e.target as HTMLInputElement).blur()
+    }
+  }
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      className="flex items-center rounded bg-background/95 px-1 py-0.5 border border-border text-foreground shadow-xs hover:border-primary/60 transition-colors"
+      title="Haz clic para escribir la duración (acepta punto o coma decimal)"
+    >
+      <input
+        type="text"
+        inputMode="decimal"
+        value={text}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className="w-8 bg-transparent font-mono text-[11px] font-bold text-foreground text-center focus:outline-none focus:text-primary p-0"
+      />
+      <span className="font-mono text-[9px] font-semibold text-muted-foreground select-none pr-0.5">
+        s
+      </span>
+    </div>
+  )
+}
 
 export function TimelineBottomBar({
   steps,
@@ -136,7 +205,7 @@ export function TimelineBottomBar({
         <div className="flex items-center gap-2 pb-1">
           {steps.map((step, idx) => {
             const duration = step.duration || 2.0
-            const width = Math.max(100, duration * PIXELS_PER_SECOND)
+            const width = Math.max(120, duration * PIXELS_PER_SECOND)
             const isSelected = selectedStepIndex === idx
             const isDraggingThis = draggedStepIndex === idx
             const isDragTarget = dragOverIndex === idx
@@ -151,7 +220,7 @@ export function TimelineBottomBar({
                 onDragEnd={handleDragEnd}
                 onClick={() => onSelectStep(idx)}
                 style={{ width: `${width}px` }}
-                className={`group relative flex h-20 shrink-0 cursor-grab active:cursor-grabbing flex-col justify-between rounded-xl border p-2.5 transition-all ${
+                className={`group relative flex h-20 shrink-0 cursor-grab active:cursor-grabbing flex-col justify-between rounded-xl border px-2 py-2 transition-all ${
                   isDraggingThis
                     ? "opacity-40 scale-95 border-dashed border-primary"
                     : isDragTarget
@@ -169,15 +238,15 @@ export function TimelineBottomBar({
                   onPointerMove={handleResizeMove}
                   onPointerUp={handleResizeEnd}
                   title="Arrastra desde la izquierda para cambiar la duración"
-                  className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize rounded-l-xl z-10 transition-colors hover:bg-primary/50 group-hover:bg-primary/25"
+                  className="absolute left-0 top-0 bottom-0 w-2.5 cursor-ew-resize rounded-l-xl z-10 transition-colors hover:bg-primary/50 group-hover:bg-primary/25"
                 />
 
                 {/* Step Header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <GripVertical className="h-3 w-3 text-muted-foreground opacity-50 group-hover:opacity-100" />
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <GripVertical className="h-3 w-3 text-muted-foreground opacity-50 group-hover:opacity-100 shrink-0" />
                     <span
-                      className={`font-mono text-[11px] font-bold ${
+                      className={`font-mono text-[11px] font-bold truncate ${
                         isSelected ? "text-primary" : "text-foreground"
                       }`}
                     >
@@ -185,38 +254,21 @@ export function TimelineBottomBar({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1 z-20">
-                    {/* Inline Duration Input */}
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      className="flex items-center rounded bg-background/90 px-1 py-0.2 border border-border/80 shadow-xs"
-                      title="Editar duración en segundos"
-                    >
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.5"
-                        max="60"
-                        value={duration}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value)
-                          if (!isNaN(val) && val >= 0.5) {
-                            onUpdateStepDuration(idx, +val.toFixed(1))
-                          }
-                        }}
-                        className="w-7 bg-transparent font-mono text-[9px] font-bold text-foreground focus:outline-none text-right"
-                      />
-                      <span className="font-mono text-[8.5px] text-muted-foreground ml-0.5">s</span>
-                    </div>
+                  <div className="flex items-center gap-0.5 z-20 shrink-0">
+                    {/* Dedicated Decimal-Safe Duration Input */}
+                    <StepDurationInput
+                      duration={duration}
+                      onUpdateDuration={(newDuration) => onUpdateStepDuration(idx, newDuration)}
+                    />
 
                     {steps.length > 1 && (
                       <Trash2
-                        className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 ml-0.5"
+                        className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 shrink-0 cursor-pointer ml-0.5"
                         onClick={(e) => {
                           e.stopPropagation()
                           onDeleteStep(idx)
                         }}
+                        title="Eliminar paso"
                       />
                     )}
                   </div>
@@ -229,8 +281,8 @@ export function TimelineBottomBar({
 
                 {/* Actions Count */}
                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Sparkles className="h-3 w-3 text-amber-500" />
-                  <span>
+                  <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
+                  <span className="truncate">
                     {step.actions.length} {step.actions.length === 1 ? "acción" : "acciones"}
                   </span>
                 </div>
@@ -243,7 +295,7 @@ export function TimelineBottomBar({
                   onPointerMove={handleResizeMove}
                   onPointerUp={handleResizeEnd}
                   title="Arrastra desde la derecha para cambiar la duración"
-                  className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize rounded-r-xl z-10 transition-colors hover:bg-primary/50 group-hover:bg-primary/25"
+                  className="absolute right-0 top-0 bottom-0 w-2.5 cursor-ew-resize rounded-r-xl z-10 transition-colors hover:bg-primary/50 group-hover:bg-primary/25"
                 />
               </div>
             )
