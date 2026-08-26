@@ -1,3 +1,9 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# IDEs
+.vscode
+.idea
+
 # Dependencies
 node_modules
 .pnp
@@ -24,6 +30,7 @@ yarn-error.log*
 
 # Local env files
 .env*.local
+.env
 
 # Vercel
 .vercel
@@ -31,3 +38,19 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# mcp
+.agents/mcp_config.json
+
+# playwright (tests)
+/playwright-report/*
+/test-results
+.playwright-mcp
+.mcp.json
+test_output*.txt
+
+# agents
+.agents/settings.local.json
+
+# temp
+screenshots/*
