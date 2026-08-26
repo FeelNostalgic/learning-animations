@@ -1,0 +1,313 @@
+"use client"
+
+import { useState, useRef } from "react"
+import { useTheme } from "next-themes"
+import {
+  NETWORK_DEVICE_STYLE,
+  PcGlyph,
+  SwitchGlyph,
+  RouterGlyph,
+  ServerGlyph,
+} from "@/components/animations/network-device-icons"
+import { CloudGlyph } from "@/components/animations/network-visual-primitives"
+import { Link2, Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import type { DynamicNode, DynamicLink } from "@/types/dynamic-animation"
+
+interface CanvasProps {
+  nodes: DynamicNode[]
+  links: DynamicLink[]
+  selectedNodeId: string | null
+  onSelectNode: (nodeId: string | null) => void
+  onUpdateNodePosition: (nodeId: string, x: number, y: number) => void
+  onAddLink: (sourceId: string, targetId: string) => void
+  onDeleteLink: (linkId: string) => void
+}
+
+export function Canvas({
+  nodes,
+  links,
+  selectedNodeId,
+  onSelectNode,
+  onUpdateNodePosition,
+  onAddLink,
+  onDeleteLink,
+}: CanvasProps) {
+  const { resolvedTheme } = useTheme()
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [connectingSourceId, setConnectingSourceId] = useState<string | null>(null)
+  const [dragNodeId, setDragNodeId] = useState<string | null>(null)
+
+  const isLight = resolvedTheme === "light"
+  const C = isLight
+    ? {
+        idle: "#94A3B8",
+        active: "#2563EB",
+        success: "#059669",
+        warn: "#D97706",
+        fg: "#0F172A",
+        bg: "#E5EAF0",
+      }
+    : {
+        idle: "#64748B",
+        active: "#38BDF8",
+        success: "#34D399",
+        warn: "#FBBF24",
+        fg: "#E5E7EB",
+        bg: "#1F2937",
+      }
+
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+
+  // Handle Dragging
+  const handlePointerDown = (nodeId: string, e: React.PointerEvent) => {
+    e.stopPropagation()
+    if (connectingSourceId) {
+      if (connectingSourceId !== nodeId) {
+        onAddLink(connectingSourceId, nodeId)
+      }
+      setConnectingSourceId(null)
+      return
+    }
+
+    onSelectNode(nodeId)
+    setDragNodeId(nodeId)
+    ;(e.target as Element).setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragNodeId || !svgRef.current) return
+    const rect = svgRef.current.getBoundingClientRect()
+    const scaleX = 800 / rect.width
+    const scaleY = 460 / rect.height
+
+    const x = Math.round(Math.max(40, Math.min(760, (e.clientX - rect.left) * scaleX)))
+    const y = Math.round(Math.max(40, Math.min(420, (e.clientY - rect.top) * scaleY)))
+
+    onUpdateNodePosition(dragNodeId, x, y)
+  }
+
+  const handlePointerUp = () => {
+    setDragNodeId(null)
+  }
+
+  const renderNodeGlyph = (node: DynamicNode) => {
+    switch (node.type) {
+      case "pc":
+        return <PcGlyph stroke={C.fg} />
+      case "switch":
+        return <SwitchGlyph stroke={C.active} />
+      case "router":
+        return <RouterGlyph stroke={C.fg} />
+      case "server":
+        return <ServerGlyph stroke={C.fg} />
+      case "cloud":
+        return <CloudGlyph fill={C.bg} stroke={C.idle} />
+      default:
+        return <PcGlyph stroke={C.fg} />
+    }
+  }
+
+  const getNodeRadius = (type: string) => {
+    switch (type) {
+      case "router":
+        return NETWORK_DEVICE_STYLE.router.radius
+      case "switch":
+        return NETWORK_DEVICE_STYLE.switch.radius
+      case "server":
+        return NETWORK_DEVICE_STYLE.server.radius
+      case "cloud":
+        return 48
+      case "pc":
+      default:
+        return NETWORK_DEVICE_STYLE.pc.radius
+    }
+  }
+
+  const getNodeLabelY = (type: string) => {
+    switch (type) {
+      case "router":
+        return NETWORK_DEVICE_STYLE.router.labelOffsetY
+      case "switch":
+        return NETWORK_DEVICE_STYLE.switch.labelOffsetY
+      case "server":
+        return NETWORK_DEVICE_STYLE.server.labelOffsetY
+      case "cloud":
+        return 64
+      case "pc":
+      default:
+        return NETWORK_DEVICE_STYLE.pc.labelOffsetY
+    }
+  }
+
+  return (
+    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-background p-6">
+      {/* Canvas Tool Bar */}
+      <div className="absolute left-6 top-6 z-10 flex items-center gap-2 rounded-xl border border-border bg-card/80 p-2 shadow-lg backdrop-blur-md">
+        <Button
+          variant={connectingSourceId ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            if (connectingSourceId) {
+              setConnectingSourceId(null)
+            } else if (selectedNodeId) {
+              setConnectingSourceId(selectedNodeId)
+            }
+          }}
+          disabled={!selectedNodeId && !connectingSourceId}
+          className="gap-1.5 text-xs"
+        >
+          <Link2 className="h-3.5 w-3.5" />
+          {connectingSourceId ? "Haz clic en el nodo destino..." : "Conectar Nodos"}
+        </Button>
+
+        {connectingSourceId && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setConnectingSourceId(null)}
+            className="text-xs"
+          >
+            Cancelar
+          </Button>
+        )}
+      </div>
+
+      {/* SVG Canvas Board */}
+      <div className="relative aspect-[800/460] w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+        <div className="absolute inset-0 bg-radial-grid opacity-30" />
+
+        <svg
+          ref={svgRef}
+          viewBox="0 0 800 460"
+          className="relative h-full w-full select-none"
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onClick={() => onSelectNode(null)}
+        >
+          {/* Links */}
+          {links.map((link) => {
+            const source = nodeMap.get(link.source)
+            const target = nodeMap.get(link.target)
+            if (!source || !target) return null
+
+            const midX = (source.x + target.x) / 2
+            const midY = (source.y + target.y) / 2
+
+            return (
+              <g key={link.id} className="group cursor-pointer">
+                {/* Visual Line */}
+                <line
+                  x1={source.x}
+                  y1={source.y}
+                  x2={target.x}
+                  y2={target.y}
+                  stroke={C.idle}
+                  strokeWidth="2"
+                  strokeDasharray={link.dashed ? "4 3" : undefined}
+                />
+                {/* Delete button overlay on line hover */}
+                <g
+                  transform={`translate(${midX}, ${midY})`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteLink(link.id)
+                  }}
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <circle r="12" fill={C.bg} stroke={C.idle} strokeWidth="1" />
+                  <Trash2
+                    x="-6"
+                    y="-6"
+                    width="12"
+                    height="12"
+                    className="text-destructive"
+                  />
+                </g>
+              </g>
+            )
+          })}
+
+          {/* Nodes */}
+          {nodes.map((node) => {
+            const isSelected = selectedNodeId === node.id
+            const isConnecting = connectingSourceId === node.id
+            const r = getNodeRadius(node.type)
+            const labelY = getNodeLabelY(node.type)
+
+            return (
+              <g
+                key={node.id}
+                transform={`translate(${node.x}, ${node.y})`}
+                onPointerDown={(e) => handlePointerDown(node.id, e)}
+                className="cursor-grab active:cursor-grabbing"
+              >
+                {/* Active Selection Ring */}
+                {(isSelected || isConnecting) && (
+                  <circle
+                    r={r + 8}
+                    fill="none"
+                    stroke={isConnecting ? C.warn : C.active}
+                    strokeWidth="2"
+                    strokeDasharray="4 2"
+                    className="animate-pulse"
+                  />
+                )}
+
+                {/* Node Background */}
+                {node.type !== "cloud" && (
+                  <circle
+                    r={r}
+                    fill={C.bg}
+                    stroke={isSelected ? C.active : C.idle}
+                    strokeWidth={isSelected ? "2.5" : "1.5"}
+                  />
+                )}
+
+                {/* Glyph */}
+                {renderNodeGlyph(node)}
+
+                {/* Node Label */}
+                <text
+                  y={labelY}
+                  textAnchor="middle"
+                  fill={C.fg}
+                  fontSize="12"
+                  fontWeight="600"
+                  fontFamily="var(--font-mono)"
+                >
+                  {node.label}
+                </text>
+
+                {/* IP Pill if available */}
+                {node.ip && (
+                  <g transform={`translate(0, ${labelY + 16})`}>
+                    <rect
+                      x="-40"
+                      y="-8"
+                      width="80"
+                      height="15"
+                      rx="3"
+                      fill={C.bg}
+                      stroke={C.idle}
+                      strokeWidth="0.8"
+                    />
+                    <text
+                      textAnchor="middle"
+                      y="3"
+                      fill={C.fg}
+                      fontSize="8"
+                      fontFamily="var(--font-mono)"
+                    >
+                      {node.ip}
+                    </text>
+                  </g>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+    </div>
+  )
+}

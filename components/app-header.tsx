@@ -48,7 +48,13 @@ export function AppHeader() {
         </ol>
       </nav>
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-3">
+        <Link
+          href="/builder"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95"
+        >
+          <span>Crear Animación</span>
+        </Link>
         <ThemeToggle />
       </div>
     </header>
