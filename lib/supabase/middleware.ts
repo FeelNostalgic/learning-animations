@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Protected routes
-  if (!user && pathname.startsWith("/builder")) {
+  if (!user && (pathname.startsWith("/builder") || pathname.startsWith("/my-animations"))) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     url.searchParams.set("redirect", pathname)

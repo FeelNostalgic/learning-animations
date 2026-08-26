@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { AssetsSidebar } from "@/components/builder/assets-sidebar"
 import { Canvas } from "@/components/builder/canvas"
 import { TimelineBottomBar } from "@/components/builder/timeline-bottom-bar"
 import { StepInspector } from "@/components/builder/step-inspector"
 import { AnimationPlayer } from "@/components/animations/animation-player"
 import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
-import { saveAnimation } from "@/app/builder/actions"
+import { saveAnimation, getAnimationById } from "@/app/builder/actions"
 import { Button } from "@/components/ui/button"
 import { Save, Eye, CheckCircle2, AlertCircle, Loader2, Tag, PenLine, X } from "lucide-react"
 import type {
@@ -66,7 +67,11 @@ const INITIAL_STEPS: DynamicStep[] = [
   },
 ]
 
-export default function BuilderPage() {
+function BuilderContent() {
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("id")
+
+  const [animationId, setAnimationId] = useState<string | null>(editId)
   const [title, setTitle] = useState("Nueva Animación de Red")
   const [topic, setTopic] = useState("Acceso a la Red")
   const [description, setDescription] = useState("Descripción pedagógica de la animación")
@@ -78,8 +83,34 @@ export default function BuilderPage() {
   const [selectedStepIndex, setSelectedStepIndex] = useState(0)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoadingAnimation, setIsLoadingAnimation] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [isCustomTopic, setIsCustomTopic] = useState(false)
+
+  // Load existing animation if id is in URL
+  useEffect(() => {
+    if (!editId) return
+
+    async function fetchAnimation() {
+      setIsLoadingAnimation(true)
+      const res = await getAnimationById(editId as string)
+      setIsLoadingAnimation(false)
+
+      if (res.success && res.data) {
+        setAnimationId(res.data.id || null)
+        setTitle(res.data.title)
+        setTopic(res.data.topic)
+        setDescription(res.data.description || "")
+        setNodes(res.data.nodes || [])
+        setLinks(res.data.links || [])
+        setSteps(res.data.steps || [])
+      } else {
+        setStatusMessage({ type: "error", text: "No se pudo cargar la animación solicitada." })
+      }
+    }
+
+    fetchAnimation()
+  }, [editId])
 
   // Node operations
   const handleAddNode = (type: NodeType) => {
@@ -183,6 +214,7 @@ export default function BuilderPage() {
     setStatusMessage(null)
 
     const animationData: DynamicAnimationData = {
+      id: animationId || undefined,
       title,
       description,
       topic,
@@ -195,7 +227,13 @@ export default function BuilderPage() {
     setIsSaving(false)
 
     if (res.success) {
-      setStatusMessage({ type: "success", text: "¡Animación guardada y publicada en Supabase con éxito!" })
+      if (res.id) setAnimationId(res.id)
+      setStatusMessage({
+        type: "success",
+        text: animationId
+          ? "¡Animación actualizada con éxito!"
+          : "¡Animación guardada y publicada en Supabase!",
+      })
       setTimeout(() => setStatusMessage(null), 4000)
     } else {
       setStatusMessage({ type: "error", text: res.error || "Error al guardar" })
@@ -205,26 +243,37 @@ export default function BuilderPage() {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null
   const selectedStep = steps[selectedStepIndex] || null
 
+  if (isLoadingAnimation) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span>Cargando animación...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       {/* ── Sub Toolbar (Title & Category) ────────────────────────── */}
-      <div className="flex h-14 items-center justify-between border-b border-border/80 bg-card/70 px-6 shrink-0 shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="flex h-12 items-center justify-between border-b border-border/80 bg-card/70 px-4 shrink-0 shadow-xs">
+        <div className="flex items-center gap-3">
           {/* Title Editor */}
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-background/80 px-3 py-1.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-background/80 px-2.5 py-1 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30">
             <PenLine className="h-3.5 w-3.5 text-primary shrink-0" />
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-56 md:w-72 bg-transparent text-xs font-bold text-foreground focus:outline-none"
+              className="w-52 md:w-64 bg-transparent text-xs font-bold text-foreground focus:outline-none"
               placeholder="Título de la animación..."
               title="Haz clic para editar el título"
             />
           </div>
 
           {/* Topic / Category Selector with Cancel Option */}
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-background/80 px-3 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background/80 px-2.5 py-1">
             <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             {!isCustomTopic ? (
               <select
@@ -249,13 +298,13 @@ export default function BuilderPage() {
                 </option>
               </select>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <input
                   type="text"
                   value={topic}
                   autoFocus
                   onChange={(e) => setTopic(e.target.value)}
-                  className="w-36 bg-transparent text-xs font-semibold text-primary focus:outline-none"
+                  className="w-32 bg-transparent text-xs font-semibold text-primary focus:outline-none"
                   placeholder="Nueva categoría..."
                 />
                 <button
@@ -267,7 +316,7 @@ export default function BuilderPage() {
                   className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
                   title="Volver a categorías predefinidas"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3 w-3" />
                 </button>
               </div>
             )}
@@ -275,7 +324,7 @@ export default function BuilderPage() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {statusMessage && (
             <div
               className={`flex items-center gap-1.5 text-xs font-medium ${
@@ -283,9 +332,9 @@ export default function BuilderPage() {
               }`}
             >
               {statusMessage.type === "success" ? (
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="h-3.5 w-3.5" />
               ) : (
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="h-3.5 w-3.5" />
               )}
               <span>{statusMessage.text}</span>
             </div>
@@ -295,35 +344,36 @@ export default function BuilderPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-            className="gap-1.5 text-xs h-8 font-semibold"
+            className="gap-1.5 text-xs h-7 font-semibold"
           >
             <Eye className="h-3.5 w-3.5" />
-            {isPreviewOpen ? "Modo Editor" : "Previsualizar"}
+            {isPreviewOpen ? "Editor" : "Previsualizar"}
           </Button>
 
           <Button
             size="sm"
             onClick={handleSave}
             disabled={isSaving}
-            className="gap-1.5 text-xs h-8 font-semibold"
+            className="gap-1.5 text-xs h-7 font-semibold"
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            Guardar y Publicar
+            {animationId ? "Actualizar" : "Guardar y Publicar"}
           </Button>
         </div>
       </div>
 
       {/* ── Main Workspace Body ───────────────────────────────────── */}
       {isPreviewOpen ? (
-        <div className="flex flex-1 overflow-hidden p-6">
+        <div className="flex flex-1 overflow-hidden p-4">
           <div className="h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
             <AnimationPlayer steps={steps} title={title}>
               <DynamicAnimationPlayer
                 animation={{
+                  id: animationId || undefined,
                   title,
                   description,
                   topic,
@@ -381,5 +431,19 @@ export default function BuilderPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function BuilderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full w-full items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <BuilderContent />
+    </Suspense>
   )
 }

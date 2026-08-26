@@ -32,7 +32,12 @@ export default async function AnimationPage({
 
   return (
     <div className="max-w-4xl mx-auto h-[calc(100vh-6rem)] flex flex-col">
-      <AnimationPlayer steps={meta.steps} title={meta.title}>
+      <AnimationPlayer
+        steps={meta.steps}
+        title={meta.title}
+        embedSlugOrId={slug}
+        isDynamic={false}
+      >
         <AnimationComponent />
       </AnimationPlayer>
     </div>

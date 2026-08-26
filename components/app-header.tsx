@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight, User as UserIcon, LogOut, Plus, LogIn, UserPlus } from "lucide-react"
+import { ChevronRight, User as UserIcon, LogOut, LogIn, UserPlus, Sparkles } from "lucide-react"
 import { animationRegistry } from "@/lib/animations/registry"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { createClient } from "@/lib/supabase/client"
@@ -47,81 +47,79 @@ export function AppHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Breadcrumbs calculation
-  const isAnimationDetail = pathname.startsWith("/animations/") && pathname !== "/animations"
-  const slug = isAnimationDetail ? pathname.split("/")[2] : null
-  const currentAnimation = slug
-    ? animationRegistry.find((item) => item.slug === slug)
-    : null
-
-  let secondBreadcrumb: string | null = null
-  if (isAnimationDetail) {
-    secondBreadcrumb = currentAnimation?.title ?? slug
-  } else if (pathname.startsWith("/builder")) {
-    secondBreadcrumb = "Constructor"
-  } else if (pathname === "/login") {
-    secondBreadcrumb = "Iniciar Sesión"
-  } else if (pathname === "/signup") {
-    secondBreadcrumb = "Crear Cuenta"
-  } else if (pathname === "/forgot-password") {
-    secondBreadcrumb = "Recuperar Contraseña"
+  // Don't render header in embed mode
+  if (pathname.startsWith("/embed")) {
+    return null
   }
 
-  const isHome = pathname === "/animations" || pathname === "/"
+  // Breadcrumbs calculation
+  const isOfficialDetail = pathname.startsWith("/animations/") && pathname !== "/animations"
+  const isMyAnimationDetail = pathname.startsWith("/my-animations/") && pathname !== "/my-animations"
+  const isMyAnimationsIndex = pathname === "/my-animations"
+  const isBuilder = pathname.startsWith("/builder")
+
+  const officialSlug = isOfficialDetail ? pathname.split("/")[2] : null
+  const officialAnim = officialSlug
+    ? animationRegistry.find((item) => item.slug === officialSlug)
+    : null
+
+  let breadcrumbs: { label: string; href?: string }[] = [{ label: "Inicio", href: "/animations" }]
+
+  if (isOfficialDetail) {
+    breadcrumbs.push({ label: officialAnim?.title || "Animación" })
+  } else if (isMyAnimationsIndex) {
+    breadcrumbs.push({ label: "Mis Animaciones" })
+  } else if (isMyAnimationDetail) {
+    breadcrumbs.push({ label: "Mis Animaciones", href: "/my-animations" })
+    breadcrumbs.push({ label: "Ver Animación" })
+  } else if (isBuilder) {
+    breadcrumbs.push({ label: "Editor" })
+  } else if (pathname === "/login") {
+    breadcrumbs.push({ label: "Iniciar Sesión" })
+  } else if (pathname === "/signup") {
+    breadcrumbs.push({ label: "Crear Cuenta" })
+  } else if (pathname === "/forgot-password") {
+    breadcrumbs.push({ label: "Recuperar Contraseña" })
+  }
 
   return (
-    <header className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-sm flex items-center justify-between px-6 shrink-0 sticky top-0 z-50">
+    <header className="h-12 border-b border-border/60 bg-background/80 backdrop-blur-md flex items-center justify-between px-4 shrink-0 sticky top-0 z-30 select-none">
+      {/* ── Breadcrumbs ─────────────────────────────────────────── */}
       <nav aria-label="Migas de pan" className="flex items-center">
-        <ol className="flex items-center gap-2 text-sm">
-          {!isHome ? (
-            <>
-              <li>
-                <Link
-                  href="/animations"
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-                >
-                  Inicio
-                </Link>
+        <ol className="flex items-center gap-1.5 text-xs font-medium">
+          {breadcrumbs.map((crumb, idx) => {
+            const isLast = idx === breadcrumbs.length - 1
+
+            return (
+              <li key={idx} className="flex items-center gap-1.5">
+                {idx > 0 && <ChevronRight className="size-3 text-muted-foreground/50 shrink-0" />}
+                {isLast || !crumb.href ? (
+                  <span className="font-semibold text-foreground truncate max-w-[200px] md:max-w-md">
+                    {crumb.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={crumb.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors truncate max-w-[140px]"
+                  >
+                    {crumb.label}
+                  </Link>
+                )}
               </li>
-              {secondBreadcrumb && (
-                <>
-                  <li aria-hidden="true">
-                    <ChevronRight className="size-4 text-muted-foreground/60" />
-                  </li>
-                  <li aria-current="page">
-                    <span className="font-semibold text-foreground">
-                      {secondBreadcrumb}
-                    </span>
-                  </li>
-                </>
-              )}
-            </>
-          ) : (
-            <li aria-current="page">
-              <span className="font-semibold text-foreground">Inicio</span>
-            </li>
-          )}
+            )
+          })}
         </ol>
       </nav>
 
-      <div className="flex items-center gap-3">
-        {pathname !== "/builder" && (
-          <Link
-            href="/builder"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95"
-          >
-            <Plus className="size-3.5" />
-            <span>Crear Animación</span>
-          </Link>
-        )}
-
+      {/* ── Right Utilities ─────────────────────────────────────── */}
+      <div className="flex items-center gap-2">
         <ThemeToggle />
 
         {/* User Profile Menu */}
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
             aria-label="Menú de usuario"
           >
             <UserIcon className="h-4 w-4 text-muted-foreground" />
@@ -140,12 +138,12 @@ export function AppHeader() {
 
                   <div className="py-1">
                     <Link
-                      href="/builder"
+                      href="/my-animations"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-accent transition-colors"
                     >
-                      <Plus className="h-3.5 w-3.5 text-primary" />
-                      <span>Constructor de Animaciones</span>
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span>Mis Animaciones</span>
                     </Link>
                   </div>
 
@@ -155,7 +153,7 @@ export function AppHeader() {
                         setMenuOpen(false)
                         await signOut()
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left"
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left cursor-pointer"
                     >
                       <LogOut className="h-3.5 w-3.5" />
                       <span>Cerrar Sesión</span>

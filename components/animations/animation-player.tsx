@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Play,
@@ -21,9 +22,12 @@ import {
   ZoomOut,
   Maximize2,
   Shrink,
-  Expand
+  Expand,
+  Code,
+  PenTool,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { EmbedDialog } from "./embed-dialog"
 import type { AnimationStep } from "@/types/animations"
 import type gsap from "gsap"
 import { cn } from "@/lib/utils"
@@ -53,13 +57,23 @@ interface AnimationPlayerProps {
   steps: AnimationStep[]
   title: string
   children: React.ReactNode
+  embedSlugOrId?: string
+  isDynamic?: boolean
+  editHref?: string
 }
 
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 2
 const ZOOM_STEP = 0.25
 
-export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps) {
+export function AnimationPlayer({
+  steps,
+  title,
+  children,
+  embedSlugOrId,
+  isDynamic = false,
+  editHref,
+}: AnimationPlayerProps) {
   const playerRef = useRef<HTMLDivElement>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
   const stepTimesRef = useRef<number[]>([])
@@ -76,9 +90,10 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
   const [tlDuration, setTlDuration] = useState(0)
   const [zoom, setZoom] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isEmbedOpen, setIsEmbedOpen] = useState(false)
 
-  const handleZoomIn  = () => setZoom(z => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)))
-  const handleZoomOut = () => setZoom(z => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)))
+  const handleZoomIn = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)))
+  const handleZoomOut = () => setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)))
   const handleZoomReset = () => setZoom(1)
 
   const updateStep = useCallback((time: number) => {
@@ -272,18 +287,57 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
       <div
         ref={playerRef}
         className={cn(
-          "flex flex-col h-full gap-2 bg-background",
+          "flex flex-col h-full gap-2 bg-background select-none",
           isFullscreen && "p-4 md:p-6"
         )}
       >
+        {/* Embed Dialog */}
+        {embedSlugOrId && (
+          <EmbedDialog
+            slugOrId={embedSlugOrId}
+            isDynamic={isDynamic}
+            isOpen={isEmbedOpen}
+            onClose={() => setIsEmbedOpen(false)}
+          />
+        )}
 
-        {/* Title */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="h-5 w-1 bg-primary rounded-full" />
-          <h1 className="text-lg font-bold text-foreground tracking-tight">{title}</h1>
-          <span className="text-xs text-muted-foreground font-mono ml-auto">
-            {currentStep + 1} / {steps.length}
-          </span>
+        {/* Title Bar & Actions */}
+        <div className="flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-4 w-1 bg-primary rounded-full shrink-0" />
+            <h1 className="text-base md:text-lg font-bold text-foreground tracking-tight truncate">
+              {title}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {editHref && (
+              <Link
+                href={editHref}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary transition-all hover:bg-primary/20 cursor-pointer shadow-xs"
+              >
+                <PenTool className="size-3.5" />
+                <span>Editar</span>
+              </Link>
+            )}
+
+            {embedSlugOrId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEmbedOpen(true)}
+                className="h-7 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                title="Incrustar animación vía iFrame"
+              >
+                <Code className="size-3.5" />
+                <span>Incrustar</span>
+              </Button>
+            )}
+
+            <span className="text-xs text-muted-foreground font-mono ml-1">
+              {currentStep + 1} / {steps.length}
+            </span>
+          </div>
         </div>
 
         {/* Animation canvas + zoom overlay */}
@@ -309,7 +363,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
           <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-md border border-border/60 bg-card/90 backdrop-blur-sm px-1 py-0.5">
             <button
               onClick={handleFullscreenToggle}
-              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
               title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
             >
               {isFullscreen ? <Shrink className="size-4" /> : <Expand className="size-4" />}
@@ -317,13 +371,13 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
             <button
               onClick={handleZoomOut}
               disabled={zoom <= ZOOM_MIN}
-              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 transition-colors"
+              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 transition-colors cursor-pointer"
             >
               <ZoomOut className="size-4" />
             </button>
             <button
               onClick={handleZoomReset}
-              className="h-6 px-1.5 flex items-center justify-center rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent transition-colors min-w-[36px]"
+              className="h-6 px-1.5 flex items-center justify-center rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent transition-colors min-w-[36px] cursor-pointer"
               title="Centrar y resetear zoom"
             >
               {zoom === 1 ? <Maximize2 className="size-4" /> : `${Math.round(zoom * 100)}%`}
@@ -331,7 +385,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
             <button
               onClick={handleZoomIn}
               disabled={zoom >= ZOOM_MAX}
-              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 transition-colors"
+              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 transition-colors cursor-pointer"
             >
               <ZoomIn className="size-4" />
             </button>
@@ -344,9 +398,10 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
             {/* Step markers — absolutely positioned at real timeline proportions */}
             <div className="relative h-4 mb-1">
               {steps.map((step, i) => {
-                const pct = tlDuration > 0
-                  ? (stepTimesRef.current[i] / tlDuration) * 100
-                  : (i / Math.max(steps.length - 1, 1)) * 100
+                const pct =
+                  tlDuration > 0
+                    ? (stepTimesRef.current[i] / tlDuration) * 100
+                    : (i / Math.max(steps.length - 1, 1)) * 100
                 return (
                   <button
                     key={i}
@@ -410,7 +465,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
                     setIsPlaying(false)
                   }}
                   className={cn(
-                    "rounded-full transition-all duration-200",
+                    "rounded-full transition-all duration-200 cursor-pointer",
                     i === currentStep
                       ? "w-5 h-2 bg-primary"
                       : i < currentStep
@@ -427,7 +482,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
                 variant="ghost"
                 size="icon"
                 onClick={handleReset}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <RotateCcw className="size-3.5" />
               </Button>
@@ -437,7 +492,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
                 size="icon"
                 onClick={handlePrev}
                 disabled={currentStep === 0}
-                className="h-8 w-8"
+                className="h-8 w-8 cursor-pointer"
               >
                 <SkipBack className="size-4" />
               </Button>
@@ -445,13 +500,9 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
               <Button
                 size="icon"
                 onClick={isPlaying ? handlePause : handlePlay}
-                className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90"
+                className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90 cursor-pointer"
               >
-                {isPlaying ? (
-                  <Pause className="size-4" />
-                ) : (
-                  <Play className="size-4" />
-                )}
+                {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
               </Button>
 
               <Button
@@ -459,7 +510,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
                 size="icon"
                 onClick={handlePlayNextStep}
                 disabled={steps.length <= 1}
-                className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary disabled:border-border disabled:bg-muted/30 disabled:text-muted-foreground"
+                className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary disabled:border-border disabled:bg-muted/30 disabled:text-muted-foreground cursor-pointer"
                 title="Reproducir hasta el siguiente paso"
               >
                 <ChevronsRight className="size-3.5" />
@@ -470,7 +521,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
                 size="icon"
                 onClick={handleNext}
                 disabled={currentStep === steps.length - 1}
-                className="h-8 w-8"
+                className="h-8 w-8 cursor-pointer"
               >
                 <SkipForward className="size-4" />
               </Button>
@@ -480,7 +531,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
                 size="icon"
                 onClick={handleLoopToggle}
                 className={cn(
-                  "h-8 w-8 transition-colors",
+                  "h-8 w-8 transition-colors cursor-pointer",
                   loop ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
                 title={loop ? "Bucle activado" : "Bucle desactivado"}
@@ -497,7 +548,7 @@ export function AnimationPlayer({ steps, title, children }: AnimationPlayerProps
                     key={option.label}
                     onClick={() => handleSpeedChange(option.label)}
                     className={cn(
-                      "px-2 py-1 text-xs font-mono transition-colors",
+                      "px-2 py-1 text-xs font-mono transition-colors cursor-pointer",
                       speedLabel === option.label
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent"
