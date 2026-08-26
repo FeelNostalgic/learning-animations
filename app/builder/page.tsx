@@ -10,7 +10,17 @@ import { AnimationPlayer } from "@/components/animations/animation-player"
 import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
 import { saveAnimation, getAnimationById } from "@/app/builder/actions"
 import { Button } from "@/components/ui/button"
-import { Save, Eye, CheckCircle2, AlertCircle, Loader2, Tag, PenLine, X } from "lucide-react"
+import {
+  Save,
+  Eye,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Tag,
+  PenLine,
+  X,
+  FilePlus,
+} from "lucide-react"
 import type {
   DynamicAnimationData,
   DynamicNode,
@@ -28,9 +38,9 @@ const TOPIC_SUGGESTIONS = [
 ]
 
 const INITIAL_NODES: DynamicNode[] = [
-  { id: "node-pc-a", type: "pc", label: "PC A", x: 180, y: 320, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
-  { id: "node-sw", type: "switch", label: "Switch", x: 400, y: 140 },
-  { id: "node-pc-b", type: "pc", label: "PC B", x: 620, y: 320, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
+  { id: "node-pc-a", type: "pc", label: "PC A", x: 280, y: 440, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
+  { id: "node-sw", type: "switch", label: "Switch", x: 600, y: 220 },
+  { id: "node-pc-b", type: "pc", label: "PC B", x: 920, y: 440, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
 ]
 
 const INITIAL_LINKS: DynamicLink[] = [
@@ -112,6 +122,23 @@ function BuilderContent() {
     fetchAnimation()
   }, [editId])
 
+  // Reset to brand new animation
+  const handleNewAnimation = () => {
+    setAnimationId(null)
+    setTitle("Nueva Animación de Red")
+    setTopic("Acceso a la Red")
+    setDescription("Descripción pedagógica de la animación")
+    setNodes(INITIAL_NODES)
+    setLinks(INITIAL_LINKS)
+    setSteps(INITIAL_STEPS)
+    setSelectedNodeId(null)
+    setSelectedStepIndex(0)
+    setIsPreviewOpen(false)
+    setStatusMessage({ type: "success", text: "Lienzo reiniciado para una nueva animación." })
+    setTimeout(() => setStatusMessage(null), 3000)
+    window.history.replaceState(null, "", "/builder")
+  }
+
   // Node operations
   const handleAddNode = (type: NodeType) => {
     const id = `node-${Date.now()}`
@@ -119,8 +146,8 @@ function BuilderContent() {
       id,
       type,
       label: `${type.toUpperCase()} ${nodes.length + 1}`,
-      x: 400,
-      y: 230,
+      x: 600,
+      y: 325,
     }
     setNodes([...nodes, newNode])
     setSelectedNodeId(id)
@@ -340,11 +367,23 @@ function BuilderContent() {
             </div>
           )}
 
+          {/* New Animation Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNewAnimation}
+            className="gap-1.5 text-xs h-7 font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+            title="Crear una animación en blanco desde cero"
+          >
+            <FilePlus className="h-3.5 w-3.5 text-primary" />
+            <span className="hidden sm:inline">Nueva Animación</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-            className="gap-1.5 text-xs h-7 font-semibold"
+            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
           >
             <Eye className="h-3.5 w-3.5" />
             {isPreviewOpen ? "Editor" : "Previsualizar"}
@@ -354,7 +393,7 @@ function BuilderContent() {
             size="sm"
             onClick={handleSave}
             disabled={isSaving}
-            className="gap-1.5 text-xs h-7 font-semibold"
+            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

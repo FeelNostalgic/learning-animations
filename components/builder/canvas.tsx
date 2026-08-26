@@ -126,10 +126,10 @@ export function Canvas({
     const rect = svgRef.current.getBoundingClientRect()
 
     const x = Math.round(
-      Math.max(40, Math.min(760, ((e.clientX - rect.left - pan.x) / zoom) * (800 / rect.width * zoom)))
+      Math.max(40, Math.min(1160, ((e.clientX - rect.left - pan.x) / zoom) * (1280 / rect.width * zoom)))
     )
     const y = Math.round(
-      Math.max(40, Math.min(420, ((e.clientY - rect.top - pan.y) / zoom) * (460 / rect.height * zoom)))
+      Math.max(40, Math.min(610, ((e.clientY - rect.top - pan.y) / zoom) * (720 / rect.height * zoom)))
     )
 
     onUpdateNodePosition(dragNodeId, x, y)
@@ -343,7 +343,7 @@ export function Canvas({
 
         <svg
           ref={svgRef}
-          viewBox="0 0 800 460"
+          viewBox="0 0 1280 720"
           preserveAspectRatio="xMidYMid meet"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,

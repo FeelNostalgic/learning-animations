@@ -14,6 +14,7 @@ export function AppHeader() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dynamicTitle, setDynamicTitle] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -35,6 +36,24 @@ export function AppHeader() {
       subscription.unsubscribe()
     }
   }, [])
+
+  // Listen for dynamic breadcrumb title events from viewers
+  useEffect(() => {
+    const handleSetTitle = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      if (customEvent.detail) {
+        setDynamicTitle(customEvent.detail)
+      }
+    }
+
+    window.addEventListener("set-breadcrumb-title", handleSetTitle)
+    return () => window.removeEventListener("set-breadcrumb-title", handleSetTitle)
+  }, [])
+
+  // Reset dynamic title on navigation
+  useEffect(() => {
+    setDynamicTitle(null)
+  }, [pathname])
 
   // Close menu on click outside
   useEffect(() => {
@@ -66,14 +85,17 @@ export function AppHeader() {
   let breadcrumbs: { label: string; href?: string }[] = [{ label: "Inicio", href: "/animations" }]
 
   if (isOfficialDetail) {
-    breadcrumbs.push({ label: officialAnim?.title || "Animación" })
+    breadcrumbs.push({ label: officialAnim?.title || dynamicTitle || "Animación" })
   } else if (isMyAnimationsIndex) {
     breadcrumbs.push({ label: "Mis Animaciones" })
   } else if (isMyAnimationDetail) {
     breadcrumbs.push({ label: "Mis Animaciones", href: "/my-animations" })
-    breadcrumbs.push({ label: "Ver Animación" })
+    breadcrumbs.push({ label: dynamicTitle || "Cargando animación..." })
   } else if (isBuilder) {
     breadcrumbs.push({ label: "Editor" })
+    if (dynamicTitle && dynamicTitle !== "Nueva Animación de Red") {
+      breadcrumbs.push({ label: dynamicTitle })
+    }
   } else if (pathname === "/login") {
     breadcrumbs.push({ label: "Iniciar Sesión" })
   } else if (pathname === "/signup") {
