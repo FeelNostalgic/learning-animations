@@ -44,22 +44,26 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 ### Framework/Library Detection
 | Context | Read this file |
 |---------|----------------|
-| Create new AI agent skills | `~/.agent/skills/skill-creator/SKILL.md` |
-| Git commits, versioning, releases | `~/.agent/skills/conventional-commits/SKILL.md` |
-| React components, hooks, JSX | `~/.agent/skills/react-19/SKILL.md` |
-| Next.js, app router, server components | `~/.agent/skills/nextjs-16/SKILL.md` |
-| TypeScript types, interfaces, generics | `~/.agent/skills/typescript/SKILL.md` |
-| Tailwind classes, styling | `~/.agent/skills/tailwind-4/SKILL.md` |
-| Zod schemas, validation | `~/.agent/skills/zod-4/SKILL.md` |
-| Zustand stores, state management | `~/.agent/skills/zustand-5/SKILL.md` |
-| AI SDK, Vercel AI, streaming | `~/.agent/skills/ai-sdk-5/SKILL.md` |
-| Playwright tests, e2e | `~/.agent/skills/playwright/SKILL.md` |
-| Supabase Postgres best practices | `~/.agent/skills/supabase-postgres-best-practices/SKILL.md` |
-| React best practices | `~/.agent/skills/vercel-react-best-practices/SKILL.md` |
-| React Composition Patterns | `~/.agent/skills/vercel-composition-patterns/SKILL.md` |
-| Web Design Guidelines, UX review | `~/.agent/skills/web-design-guidelines/SKILL.md` |
-| Frontend Design, UI/UX design | `~/.agent/skills/frontend-design/SKILL.md` |
-| Shadcn UI Components | `~/.agent/skills/josechifflet/SKILL.md` |
+| Create new AI agent skills | `~/.agents/skills/skill-creator/SKILL.md` |
+| Git commits, versioning, releases | `~/.agents/skills/conventional-commits/SKILL.md` |
+| React components, hooks, JSX | `~/.agents/skills/react-19/SKILL.md` |
+| Next.js, app router, server components | `~/.agents/skills/nextjs-16/SKILL.md`, `~/.agents/skills/next-cache-components/SKILL.md`, `~/.agents/skills/next-upgrade/SKILL.md` |
+| TypeScript types, interfaces, generics | `~/.agents/skills/typescript/SKILL.md`, `~/.agents/skills/typescript-advanced-types/SKILL.md` |
+| Tailwind classes, styling | `~/.agents/skills/tailwind-4/SKILL.md`, `~/.agents/skills/tailwind-css-patterns/SKILL.md` |
+| Zod schemas, validation | `~/.agents/skills/zod-4/SKILL.md` |
+| Zustand stores, state management | `~/.agents/skills/zustand-5/SKILL.md` |
+| AI SDK, Vercel AI, streaming | `~/.agents/skills/ai-sdk-5/SKILL.md` |
+| Playwright tests, e2e | `~/.agents/skills/playwright/SKILL.md` |
+| Supabase Postgres best practices | `~/.agents/skills/supabase-postgres-best-practices/SKILL.md` |
+| React best practices | `~/.agents/skills/vercel-react-best-practices/SKILL.md` |
+| React Composition Patterns | `~/.agents/skills/vercel-composition-patterns/SKILL.md` |
+| Web Design Guidelines, UX review | `~/.agents/skills/web-design-guidelines/SKILL.md` |
+| Frontend Design, UI/UX design | `~/.agents/skills/frontend-design/SKILL.md` |
+| Accessibility Best Practices | `~/.agents/skills/accessibility/SKILL.md` |
+| Seo Best Practices | `~/.agents/skills/seo/SKILL.md` |
+| Shadcn UI Components | `~/.agents/skills/josechifflet/SKILL.md` |
+| GSAP animations, framework, performance, plugins, timeline, scrolltrigger, utils | `~/.agents/skills/gsap-frameworks/SKILL.md`,  `~/.agents/skills/gsap-performance/SKILL.md`, `~/.agents/skills/gsap-plugins/SKILL.md`, `~/.agents/skills/gsap-react/SKILL.md`, `~/.agents/skills/gsap-scrolltrigger/SKILL.md`, `~/.agents/skills/gsap-timeline/SKILL.md`, `~/.agents/skills/gsap-utils/SKILL.md`|
+
 
 ### How to use skills
 1. Detect context from user request or current file being edited
