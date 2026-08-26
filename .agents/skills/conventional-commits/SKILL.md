@@ -138,7 +138,7 @@ BREAKING CHANGE: user table renamed to profiles, all queries must be updated
 
 This project uses GitHub Actions to automate versioning. The CI pipeline:
 
-1. Reads the commit message prefix on push to `main`
+1. Reads the commit message prefix on push to `dev`
 2. Determines bump type (`patch`, `minor`, `major`)
 3. Runs `npm version` to update `package.json`
 4. Creates a git tag (`v0.2.0`)
