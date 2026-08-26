@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest"
+import { describe, it, expect } from "vitest"
 import { compileDynamicTimeline, type PaletteColors } from "@/lib/animations/dynamic-compiler"
 import type { DynamicAnimationData } from "@/types/dynamic-animation"
 
@@ -16,7 +16,7 @@ const mockPalette: PaletteColors = {
 }
 
 describe("compileDynamicTimeline", () => {
-  it("compiles a valid GSAP timeline from animation data", () => {
+  it("compiles a valid GSAP timeline with exact accumulated step durations", () => {
     const mockData: DynamicAnimationData = {
       title: "Test Animation",
       description: "Test description",
@@ -33,6 +33,7 @@ describe("compileDynamicTimeline", () => {
           id: "step-1",
           label: "Step 1",
           description: "First step",
+          duration: 4.0,
           actions: [
             { id: "act-1", type: "highlight", targetId: "node-1", color: "active" },
             { id: "act-2", type: "pulse", targetId: "node-1" },
@@ -42,6 +43,7 @@ describe("compileDynamicTimeline", () => {
           id: "step-2",
           label: "Step 2",
           description: "Second step",
+          duration: 6.0,
           actions: [
             {
               id: "act-3",
@@ -56,7 +58,6 @@ describe("compileDynamicTimeline", () => {
       ],
     }
 
-    // Create a mock SVG container in the happy-dom document
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
     svg.innerHTML = `
       <g id="node-node-1"><circle class="node-circle" /><circle class="ring" /></g>
@@ -70,10 +71,10 @@ describe("compileDynamicTimeline", () => {
     const tl = compileDynamicTimeline(mockData, q, mockPalette)
 
     expect(tl).toBeDefined()
-    expect(tl.labels).toHaveProperty("step-1")
-    expect(tl.labels).toHaveProperty("step-2")
+    expect(tl.labels["step-1"]).toBe(0)
+    expect(tl.labels["step-2"]).toBe(4.0)
+    expect(tl.duration()).toBe(10.0)
 
-    // Cleanup
     document.body.removeChild(svg)
   })
 })

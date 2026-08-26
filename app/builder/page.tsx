@@ -3,12 +3,13 @@
 import { useState } from "react"
 import { AssetsSidebar } from "@/components/builder/assets-sidebar"
 import { Canvas } from "@/components/builder/canvas"
-import { TimelinePanel } from "@/components/builder/timeline-panel"
+import { TimelineBottomBar } from "@/components/builder/timeline-bottom-bar"
+import { StepInspector } from "@/components/builder/step-inspector"
 import { AnimationPlayer } from "@/components/animations/animation-player"
 import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
 import { saveAnimation } from "@/app/builder/actions"
 import { Button } from "@/components/ui/button"
-import { Save, Eye, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Save, Eye, CheckCircle2, AlertCircle, Loader2, Tag, PenLine, X } from "lucide-react"
 import type {
   DynamicAnimationData,
   DynamicNode,
@@ -17,10 +18,18 @@ import type {
   NodeType,
 } from "@/types/dynamic-animation"
 
+const TOPIC_SUGGESTIONS = [
+  "Acceso a la Red",
+  "Capa de Internet / IP",
+  "Capa de Transporte",
+  "Capa de Aplicación",
+  "Seguridad y Cifrado",
+]
+
 const INITIAL_NODES: DynamicNode[] = [
-  { id: "node-pc-a", type: "pc", label: "PC A", x: 180, y: 320, ip: "192.168.1.10" },
+  { id: "node-pc-a", type: "pc", label: "PC A", x: 180, y: 320, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
   { id: "node-sw", type: "switch", label: "Switch", x: 400, y: 140 },
-  { id: "node-pc-b", type: "pc", label: "PC B", x: 620, y: 320, ip: "192.168.1.20" },
+  { id: "node-pc-b", type: "pc", label: "PC B", x: 620, y: 320, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
 ]
 
 const INITIAL_LINKS: DynamicLink[] = [
@@ -33,6 +42,7 @@ const INITIAL_STEPS: DynamicStep[] = [
     id: "step-1",
     label: "1. PC A prepara el envío",
     description: "PC A quiere comunicarse con PC B y resalta en amarillo para iniciar la petición.",
+    duration: 2.0,
     actions: [
       { id: "act-1", type: "highlight", targetId: "node-pc-a", color: "warn" },
       { id: "act-2", type: "pulse", targetId: "node-pc-a" },
@@ -42,6 +52,7 @@ const INITIAL_STEPS: DynamicStep[] = [
     id: "step-2",
     label: "2. Envío de paquete al Switch",
     description: "La trama sale de PC A con destino al Switch central.",
+    duration: 2.5,
     actions: [
       {
         id: "act-3",
@@ -68,6 +79,7 @@ export default function BuilderPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [isCustomTopic, setIsCustomTopic] = useState(false)
 
   // Node operations
   const handleAddNode = (type: NodeType) => {
@@ -126,6 +138,7 @@ export default function BuilderPage() {
       id: `step-${Date.now()}`,
       label: `${newStepIndex}. Nuevo Paso`,
       description: "Descripción de las acciones que ocurren en este paso.",
+      duration: 2.0,
       actions: [],
     }
     setSteps([...steps, newStep])
@@ -141,10 +154,27 @@ export default function BuilderPage() {
     }
   }
 
-  const handleUpdateStep = (index: number, updatedStep: DynamicStep) => {
+  const handleUpdateStep = (updatedStep: DynamicStep) => {
     const newSteps = [...steps]
-    newSteps[index] = updatedStep
+    newSteps[selectedStepIndex] = updatedStep
     setSteps(newSteps)
+  }
+
+  const handleUpdateStepDuration = (index: number, newDuration: number) => {
+    const newSteps = [...steps]
+    newSteps[index] = {
+      ...newSteps[index],
+      duration: newDuration,
+    }
+    setSteps(newSteps)
+  }
+
+  const handleReorderSteps = (fromIndex: number, toIndex: number) => {
+    const updated = [...steps]
+    const [moved] = updated.splice(fromIndex, 1)
+    updated.splice(toIndex, 0, moved)
+    setSteps(updated)
+    setSelectedStepIndex(toIndex)
   }
 
   // Save Animation to Supabase
@@ -173,29 +203,78 @@ export default function BuilderPage() {
   }
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null
+  const selectedStep = steps[selectedStepIndex] || null
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      {/* ── Sub Toolbar ───────────────────────────────────────────── */}
-      <div className="flex h-12 items-center justify-between border-b border-border/80 bg-card/60 px-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-bold text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
-            placeholder="Título de la animación..."
-          />
-          <span className="text-xs text-muted-foreground">en</span>
-          <input
-            type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            className="rounded-md border border-transparent bg-transparent px-2 py-1 text-xs text-muted-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"
-            placeholder="Tema (ej. Acceso a la Red)"
-          />
+      {/* ── Sub Toolbar (Title & Category) ────────────────────────── */}
+      <div className="flex h-14 items-center justify-between border-b border-border/80 bg-card/70 px-6 shrink-0 shadow-sm">
+        <div className="flex items-center gap-4">
+          {/* Title Editor */}
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-background/80 px-3 py-1.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+            <PenLine className="h-3.5 w-3.5 text-primary shrink-0" />
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-56 md:w-72 bg-transparent text-xs font-bold text-foreground focus:outline-none"
+              placeholder="Título de la animación..."
+              title="Haz clic para editar el título"
+            />
+          </div>
+
+          {/* Topic / Category Selector with Cancel Option */}
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-background/80 px-3 py-1.5">
+            <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            {!isCustomTopic ? (
+              <select
+                value={topic}
+                onChange={(e) => {
+                  if (e.target.value === "__custom__") {
+                    setIsCustomTopic(true)
+                  } else {
+                    setTopic(e.target.value)
+                  }
+                }}
+                className="bg-transparent text-xs font-semibold text-primary focus:outline-none cursor-pointer"
+                title="Selecciona la categoría o tema"
+              >
+                {TOPIC_SUGGESTIONS.map((t) => (
+                  <option key={t} value={t} className="bg-card text-foreground">
+                    {t}
+                  </option>
+                ))}
+                <option value="__custom__" className="bg-card text-muted-foreground">
+                  + Otra categoría...
+                </option>
+              </select>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={topic}
+                  autoFocus
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-36 bg-transparent text-xs font-semibold text-primary focus:outline-none"
+                  placeholder="Nueva categoría..."
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTopic("Acceso a la Red")
+                    setIsCustomTopic(false)
+                  }}
+                  className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
+                  title="Volver a categorías predefinidas"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* Action Controls */}
         <div className="flex items-center gap-3">
           {statusMessage && (
             <div
@@ -216,7 +295,7 @@ export default function BuilderPage() {
             variant="outline"
             size="sm"
             onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-            className="gap-1.5 text-xs h-8"
+            className="gap-1.5 text-xs h-8 font-semibold"
           >
             <Eye className="h-3.5 w-3.5" />
             {isPreviewOpen ? "Modo Editor" : "Previsualizar"}
@@ -226,7 +305,7 @@ export default function BuilderPage() {
             size="sm"
             onClick={handleSave}
             disabled={isSaving}
-            className="gap-1.5 text-xs h-8"
+            className="gap-1.5 text-xs h-8 font-semibold"
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -257,35 +336,47 @@ export default function BuilderPage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left: Predefined Assets Palette */}
-          <AssetsSidebar
-            onAddNode={handleAddNode}
-            selectedNode={selectedNode}
-            onUpdateNode={handleUpdateNode}
-            onDeleteNode={handleDeleteNode}
-          />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Main Top Area: Left (Assets), Center (Canvas), Right (Step Inspector) */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left: Predefined Assets Palette */}
+            <AssetsSidebar
+              onAddNode={handleAddNode}
+              selectedNode={selectedNode}
+              onUpdateNode={handleUpdateNode}
+              onDeleteNode={handleDeleteNode}
+            />
 
-          {/* Center: Interactive SVG Canvas */}
-          <Canvas
-            nodes={nodes}
-            links={links}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={setSelectedNodeId}
-            onUpdateNodePosition={handleUpdateNodePosition}
-            onAddLink={handleAddLink}
-            onDeleteLink={handleDeleteLink}
-          />
+            {/* Center: Interactive SVG Canvas (Zoom, Pan, Context Menu) */}
+            <Canvas
+              nodes={nodes}
+              links={links}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={setSelectedNodeId}
+              onUpdateNodePosition={handleUpdateNodePosition}
+              onAddLink={handleAddLink}
+              onDeleteLink={handleDeleteLink}
+              onDeleteNode={handleDeleteNode}
+            />
 
-          {/* Right: Timeline & Actions Panel */}
-          <TimelinePanel
+            {/* Right: Step Inspector & Action Form */}
+            <StepInspector
+              step={selectedStep}
+              stepIndex={selectedStepIndex}
+              nodes={nodes}
+              onUpdateStep={handleUpdateStep}
+            />
+          </div>
+
+          {/* Bottom Area: Horizontal DAW-style Timeline */}
+          <TimelineBottomBar
             steps={steps}
-            nodes={nodes}
             selectedStepIndex={selectedStepIndex}
             onSelectStep={setSelectedStepIndex}
             onAddStep={handleAddStep}
             onDeleteStep={handleDeleteStep}
-            onUpdateStep={handleUpdateStep}
+            onUpdateStepDuration={handleUpdateStepDuration}
+            onReorderSteps={handleReorderSteps}
           />
         </div>
       )}

@@ -37,6 +37,7 @@ export interface DynamicAction {
 
 export interface DynamicStep extends AnimationStep {
   actions: DynamicAction[]
+  duration?: number // Duración en segundos (por defecto 2.0s)
 }
 
 export interface DynamicAnimationData {

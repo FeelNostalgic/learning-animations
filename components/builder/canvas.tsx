@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useTheme } from "next-themes"
 import {
   NETWORK_DEVICE_STYLE,
@@ -10,7 +10,7 @@ import {
   ServerGlyph,
 } from "@/components/animations/network-device-icons"
 import { CloudGlyph } from "@/components/animations/network-visual-primitives"
-import { Link2, Trash2 } from "lucide-react"
+import { Link2, Trash2, ZoomIn, ZoomOut, RotateCcw, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { DynamicNode, DynamicLink } from "@/types/dynamic-animation"
 
@@ -22,6 +22,7 @@ interface CanvasProps {
   onUpdateNodePosition: (nodeId: string, x: number, y: number) => void
   onAddLink: (sourceId: string, targetId: string) => void
   onDeleteLink: (linkId: string) => void
+  onDeleteNode: (nodeId: string) => void
 }
 
 export function Canvas({
@@ -32,11 +33,28 @@ export function Canvas({
   onUpdateNodePosition,
   onAddLink,
   onDeleteLink,
+  onDeleteNode,
 }: CanvasProps) {
   const { resolvedTheme } = useTheme()
+  const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+
+  // Zoom and Pan states
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+
+  // Connecting and Dragging states
   const [connectingSourceId, setConnectingSourceId] = useState<string | null>(null)
   const [dragNodeId, setDragNodeId] = useState<string | null>(null)
+
+  // Context Menu state
+  const [contextMenu, setContextMenu] = useState<{
+    nodeId: string
+    x: number
+    y: number
+  } | null>(null)
 
   const isLight = resolvedTheme === "light"
   const C = isLight
@@ -59,9 +77,75 @@ export function Canvas({
 
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
-  // Handle Dragging
-  const handlePointerDown = (nodeId: string, e: React.PointerEvent) => {
+  // Close context menu on global click
+  useEffect(() => {
+    const handleGlobalClick = () => setContextMenu(null)
+    window.addEventListener("click", handleGlobalClick)
+    return () => window.removeEventListener("click", handleGlobalClick)
+  }, [])
+
+  // Zoom Controls
+  const handleZoomIn = () => setZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))
+  const handleZoomOut = () => setZoom((z) => Math.max(0.4, +(z - 0.15).toFixed(2)))
+  const handleZoomReset = () => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }
+
+  // Wheel Zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92
+    setZoom((z) => Math.min(2.5, Math.max(0.4, +(z * zoomFactor).toFixed(2))))
+  }
+
+  // Background Pan Handling
+  const handleBackgroundPointerDown = (e: React.PointerEvent) => {
+    if (e.button === 0 || e.button === 1) {
+      if (connectingSourceId) {
+        setConnectingSourceId(null)
+      }
+      setIsPanning(true)
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+      onSelectNode(null)
+      setContextMenu(null)
+    }
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    // 1. Pan canvas background
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y,
+      })
+      return
+    }
+
+    // 2. Drag node
+    if (!dragNodeId || !svgRef.current) return
+    const rect = svgRef.current.getBoundingClientRect()
+
+    const x = Math.round(
+      Math.max(40, Math.min(760, ((e.clientX - rect.left - pan.x) / zoom) * (800 / rect.width * zoom)))
+    )
+    const y = Math.round(
+      Math.max(40, Math.min(420, ((e.clientY - rect.top - pan.y) / zoom) * (460 / rect.height * zoom)))
+    )
+
+    onUpdateNodePosition(dragNodeId, x, y)
+  }
+
+  const handlePointerUp = () => {
+    setIsPanning(false)
+    setDragNodeId(null)
+  }
+
+  // Node Drag Start
+  const handleNodePointerDown = (nodeId: string, e: React.PointerEvent) => {
     e.stopPropagation()
+    if (e.button === 2) return // Ignore right-click
+
     if (connectingSourceId) {
       if (connectingSourceId !== nodeId) {
         onAddLink(connectingSourceId, nodeId)
@@ -75,20 +159,20 @@ export function Canvas({
     ;(e.target as Element).setPointerCapture(e.pointerId)
   }
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragNodeId || !svgRef.current) return
-    const rect = svgRef.current.getBoundingClientRect()
-    const scaleX = 800 / rect.width
-    const scaleY = 460 / rect.height
+  // Right-Click Context Menu on Node
+  const handleNodeContextMenu = (nodeId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onSelectNode(nodeId)
 
-    const x = Math.round(Math.max(40, Math.min(760, (e.clientX - rect.left) * scaleX)))
-    const y = Math.round(Math.max(40, Math.min(420, (e.clientY - rect.top) * scaleY)))
-
-    onUpdateNodePosition(dragNodeId, x, y)
-  }
-
-  const handlePointerUp = () => {
-    setDragNodeId(null)
+    if (containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect()
+      setContextMenu({
+        nodeId,
+        x: e.clientX - containerRect.left,
+        y: e.clientY - containerRect.top,
+      })
+    }
   }
 
   const renderNodeGlyph = (node: DynamicNode) => {
@@ -141,50 +225,115 @@ export function Canvas({
   }
 
   return (
-    <div className="relative flex flex-1 h-full w-full flex-col items-center justify-center overflow-hidden bg-background">
-      {/* Canvas Tool Bar */}
-      <div className="absolute left-6 top-6 z-10 flex items-center gap-2 rounded-xl border border-border bg-card/90 p-2 shadow-lg backdrop-blur-md">
-        <Button
-          variant={connectingSourceId ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            if (connectingSourceId) {
-              setConnectingSourceId(null)
-            } else if (selectedNodeId) {
-              setConnectingSourceId(selectedNodeId)
-            }
-          }}
-          disabled={!selectedNodeId && !connectingSourceId}
-          className="gap-1.5 text-xs"
-        >
-          <Link2 className="h-3.5 w-3.5" />
-          {connectingSourceId ? "Haz clic en el nodo destino..." : "Conectar Nodos"}
-        </Button>
-
-        {connectingSourceId && (
+    <div
+      ref={containerRef}
+      onWheel={handleWheel}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerDown={handleBackgroundPointerDown}
+      className="relative flex flex-1 h-full w-full flex-col items-center justify-center overflow-hidden bg-background select-none cursor-crosshair"
+    >
+      {/* ── Active Connecting Mode Helper Banner ─────────────────── */}
+      {connectingSourceId && (
+        <div className="absolute left-6 top-6 z-20 flex items-center gap-3 rounded-xl border border-amber-500/40 bg-card/95 px-3.5 py-2 shadow-xl backdrop-blur-md animate-pulse">
+          <div className="flex items-center gap-2 text-xs font-semibold text-amber-500">
+            <Link2 className="h-4 w-4" />
+            <span>Modo Conexión: Haz clic en el nodo de destino</span>
+          </div>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setConnectingSourceId(null)}
-            className="text-xs"
+            onClick={(e) => {
+              e.stopPropagation()
+              setConnectingSourceId(null)
+            }}
+            className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
           >
+            <X className="h-3.5 w-3.5" />
             Cancelar
           </Button>
-        )}
+        </div>
+      )}
+
+      {/* ── Zoom Controls Floating Bar ──────────────────────────── */}
+      <div className="absolute right-6 top-6 z-10 flex items-center gap-1 rounded-xl border border-border bg-card/90 p-1.5 shadow-lg backdrop-blur-md">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleZoomIn}
+          className="h-8 w-8 text-foreground"
+          title="Acercar (Zoom In)"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <span className="min-w-[42px] text-center font-mono text-xs font-semibold text-muted-foreground">
+          {Math.round(zoom * 100)}%
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleZoomOut}
+          className="h-8 w-8 text-foreground"
+          title="Alejar (Zoom Out)"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleZoomReset}
+          className="h-8 w-8 text-foreground"
+          title="Restablecer vista"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
       </div>
 
-      {/* SVG Canvas Board - Maximized full space */}
-      <div className="relative h-full w-full overflow-hidden bg-card/30">
+      {/* ── Context Menu (Right Click on Node) ───────────────────── */}
+      {contextMenu && (
+        <div
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          className="absolute z-50 min-w-[170px] rounded-xl border border-border bg-card/95 p-1.5 shadow-2xl backdrop-blur-md text-xs"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              setConnectingSourceId(contextMenu.nodeId)
+              setContextMenu(null)
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-foreground hover:bg-accent transition-colors text-left font-medium"
+          >
+            <Link2 className="h-3.5 w-3.5 text-primary" />
+            <span>Conectar a otro nodo...</span>
+          </button>
+          <div className="border-t border-border my-1" />
+          <button
+            onClick={() => {
+              onDeleteNode(contextMenu.nodeId)
+              setContextMenu(null)
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left font-semibold"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Eliminar nodo</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── SVG Canvas Board (Zoom & Pan Applied) ────────────────── */}
+      <div className="relative h-full w-full overflow-hidden bg-card/20">
         <div className="absolute inset-0 bg-radial-grid opacity-30 pointer-events-none" />
 
         <svg
           ref={svgRef}
           viewBox="0 0 800 460"
           preserveAspectRatio="xMidYMid meet"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: "center center",
+            transition: isPanning ? "none" : "transform 0.05s ease-out",
+          }}
           className="relative h-full w-full select-none"
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onClick={() => onSelectNode(null)}
         >
           {/* Links */}
           {links.map((link) => {
@@ -197,7 +346,6 @@ export function Canvas({
 
             return (
               <g key={link.id} className="group cursor-pointer">
-                {/* Visual Line */}
                 <line
                   x1={source.x}
                   y1={source.y}
@@ -207,7 +355,6 @@ export function Canvas({
                   strokeWidth="2"
                   strokeDasharray={link.dashed ? "4 3" : undefined}
                 />
-                {/* Delete button overlay on line hover */}
                 <g
                   transform={`translate(${midX}, ${midY})`}
                   onClick={(e) => {
@@ -240,9 +387,17 @@ export function Canvas({
               <g
                 key={node.id}
                 transform={`translate(${node.x}, ${node.y})`}
-                onPointerDown={(e) => handlePointerDown(node.id, e)}
+                onPointerDown={(e) => handleNodePointerDown(node.id, e)}
+                onContextMenu={(e) => handleNodeContextMenu(node.id, e)}
                 onClick={(e) => {
                   e.stopPropagation()
+                  if (connectingSourceId) {
+                    if (connectingSourceId !== node.id) {
+                      onAddLink(connectingSourceId, node.id)
+                    }
+                    setConnectingSourceId(null)
+                    return
+                  }
                   onSelectNode(node.id)
                 }}
                 className="cursor-grab active:cursor-grabbing"

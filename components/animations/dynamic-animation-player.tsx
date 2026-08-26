@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useState, useMemo } from "react"
+import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import gsap from "gsap"
 import { useTheme } from "next-themes"
+import { AnimatePresence } from "framer-motion"
 import { useAnimationContext } from "./animation-player"
 import {
   NETWORK_DEVICE_STYLE,
@@ -12,6 +13,7 @@ import {
   ServerGlyph,
 } from "./network-device-icons"
 import { CloudGlyph, PacketPill } from "./network-visual-primitives"
+import { NodeInfoCard, type NodeInfo } from "./node-info-card"
 import { compileDynamicTimeline, type PaletteColors } from "@/lib/animations/dynamic-compiler"
 import type { DynamicAnimationData, DynamicNode } from "@/types/dynamic-animation"
 
@@ -19,11 +21,27 @@ interface DynamicAnimationPlayerProps {
   animation: DynamicAnimationData
 }
 
+const VB = { w: 800, h: 460 }
+
 export function DynamicAnimationPlayer({ animation }: DynamicAnimationPlayerProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const { registerTimeline } = useAnimationContext()
   const { resolvedTheme } = useTheme()
   const [selectedNode, setSelectedNode] = useState<DynamicNode | null>(null)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleNodeEnter = useCallback((node: DynamicNode) => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    setSelectedNode(node)
+  }, [])
+
+  const scheduleHide = useCallback(() => {
+    hideTimer.current = setTimeout(() => setSelectedNode(null), 180)
+  }, [])
+
+  const cancelHide = useCallback(() => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+  }, [])
 
   const C: PaletteColors = useMemo(
     () =>
@@ -125,8 +143,36 @@ export function DynamicAnimationPlayer({ animation }: DynamicAnimationPlayerProp
     }
   }
 
+  const activeNodeInfo: NodeInfo | null = selectedNode
+    ? {
+        id: selectedNode.id,
+        label: selectedNode.label,
+        ip: selectedNode.ip,
+        mask: selectedNode.mask,
+        mac: selectedNode.mac,
+        gateway: selectedNode.gateway,
+      }
+    : null
+
+  const activeNodeRadius = selectedNode ? getNodeRadius(selectedNode.type) : 36
+
   return (
     <div className="relative h-full w-full">
+      {/* ── Node Info Card Hover Overlay ───────────────────────── */}
+      <AnimatePresence>
+        {activeNodeInfo && selectedNode && (
+          <NodeInfoCard
+            node={activeNodeInfo}
+            anchorX={selectedNode.x + activeNodeRadius}
+            anchorY={selectedNode.y + activeNodeRadius}
+            viewBoxW={VB.w}
+            viewBoxH={VB.h}
+            onMouseEnter={cancelHide}
+            onMouseLeave={scheduleHide}
+          />
+        )}
+      </AnimatePresence>
+
       <svg
         ref={svgRef}
         viewBox="0 0 800 460"
@@ -162,8 +208,8 @@ export function DynamicAnimationPlayer({ animation }: DynamicAnimationPlayerProp
             <g
               key={node.id}
               id={`node-${node.id}`}
-              onMouseEnter={() => setSelectedNode(node)}
-              onMouseLeave={() => setSelectedNode(null)}
+              onMouseEnter={() => handleNodeEnter(node)}
+              onMouseLeave={scheduleHide}
               className="cursor-pointer"
             >
               {/* Pulse Ring */}

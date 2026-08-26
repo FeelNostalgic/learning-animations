@@ -48,133 +48,148 @@ export function compileDynamicTimeline(
     })
   })
 
-  // 2. Compile Steps & Actions into Timeline
-  animation.steps.forEach((step, stepIndex) => {
-    tl.addLabel(step.id || `step-${stepIndex + 1}`)
+  // 2. Compile Steps & Actions into Timeline with exact step time alignment
+  let currentTimelineTime = 0
 
-    if (!step.actions || step.actions.length === 0) {
-      // Small dummy tween so the step has a timeline duration
-      tl.to({}, { duration: 0.5 })
-      return
+  animation.steps.forEach((step, stepIndex) => {
+    const stepDuration = step.duration || 2.0
+    const stepStartTime = currentTimelineTime
+    const stepLabel = step.id || `step-${stepIndex + 1}`
+
+    // Add step label at exact accumulated second
+    tl.addLabel(stepLabel, stepStartTime)
+
+    if (step.actions && step.actions.length > 0) {
+      step.actions.forEach((action) => {
+        const actionDuration = Math.min(action.duration || 0.8, stepDuration)
+        const colorVal = action.color ? C[action.color] || C.active : C.active
+
+        switch (action.type) {
+          case "highlight": {
+            if (action.targetId) {
+              tl.to(
+                q(`#node-${action.targetId} .node-circle`),
+                {
+                  stroke: colorVal,
+                  strokeWidth: 2.5,
+                  opacity: 1,
+                  duration: actionDuration,
+                },
+                stepStartTime
+              )
+            }
+            break
+          }
+
+          case "pulse": {
+            if (action.targetId) {
+              tl.to(
+                q(`#node-${action.targetId} .ring`),
+                {
+                  scale: 1.6,
+                  opacity: 0.5,
+                  repeat: 2,
+                  yoyo: true,
+                  ease: "power1.inOut",
+                  duration: actionDuration / 2,
+                  transformOrigin: "50% 50%",
+                },
+                stepStartTime
+              )
+            }
+            break
+          }
+
+          case "fade": {
+            if (action.targetId) {
+              tl.to(
+                q(`#node-${action.targetId}`),
+                {
+                  opacity: 0.35,
+                  duration: actionDuration,
+                },
+                stepStartTime
+              )
+            }
+            break
+          }
+
+          case "badge": {
+            if (action.targetId) {
+              tl.to(
+                q(`#badge-${action.targetId}`),
+                {
+                  opacity: 1,
+                  y: -10,
+                  duration: Math.min(0.3, actionDuration),
+                },
+                stepStartTime
+              )
+            }
+            break
+          }
+
+          case "tooltip": {
+            tl.to(
+              q(`#tooltip-${action.id}`),
+              {
+                opacity: 1,
+                y: 0,
+                duration: actionDuration,
+                ease: "back.out(1.2)",
+              },
+              stepStartTime
+            )
+            break
+          }
+
+          case "packet": {
+            const fromNode = action.fromId ? nodeMap.get(action.fromId) : null
+            const toNode = action.toId ? nodeMap.get(action.toId) : null
+
+            if (fromNode && toNode) {
+              const appearDuration = 0.05
+              const moveDuration = Math.max(0.2, actionDuration - 0.15)
+              const hideDuration = 0.1
+
+              tl.to(
+                q(`#pkt-${action.id}`),
+                {
+                  x: fromNode.x,
+                  y: fromNode.y,
+                  opacity: 1,
+                  duration: appearDuration,
+                },
+                stepStartTime
+              )
+                .to(
+                  q(`#pkt-${action.id}`),
+                  {
+                    x: toNode.x,
+                    y: toNode.y,
+                    duration: moveDuration,
+                    ease: "power2.inOut",
+                  },
+                  stepStartTime + appearDuration
+                )
+                .to(
+                  q(`#pkt-${action.id}`),
+                  {
+                    opacity: 0,
+                    duration: hideDuration,
+                  },
+                  stepStartTime + appearDuration + moveDuration
+                )
+            }
+            break
+          }
+        }
+      })
     }
 
-    step.actions.forEach((action, actionIndex) => {
-      const position = actionIndex === 0 ? undefined : "<"
-      const duration = action.duration || 0.5
-      const colorVal = action.color ? C[action.color] || C.active : C.active
-
-      switch (action.type) {
-        case "highlight": {
-          if (action.targetId) {
-            tl.to(
-              q(`#node-${action.targetId} .node-circle`),
-              {
-                stroke: colorVal,
-                strokeWidth: 2.5,
-                opacity: 1,
-                duration,
-              },
-              position
-            )
-          }
-          break
-        }
-
-        case "pulse": {
-          if (action.targetId) {
-            tl.to(
-              q(`#node-${action.targetId} .ring`),
-              {
-                scale: 1.6,
-                opacity: 0.5,
-                repeat: 2,
-                yoyo: true,
-                ease: "power1.inOut",
-                duration: duration / 2,
-                transformOrigin: "50% 50%",
-              },
-              position
-            )
-          }
-          break
-        }
-
-        case "fade": {
-          if (action.targetId) {
-            tl.to(
-              q(`#node-${action.targetId}`),
-              {
-                opacity: 0.35,
-                duration,
-              },
-              position
-            )
-          }
-          break
-        }
-
-        case "badge": {
-          if (action.targetId) {
-            tl.to(
-              q(`#badge-${action.targetId}`),
-              {
-                opacity: 1,
-                y: -10,
-                duration: 0.3,
-              },
-              position
-            )
-          }
-          break
-        }
-
-        case "tooltip": {
-          tl.to(
-            q(`#tooltip-${action.id}`),
-            {
-              opacity: 1,
-              y: 0,
-              duration,
-              ease: "back.out(1.2)",
-            },
-            position
-          )
-          break
-        }
-
-        case "packet": {
-          const fromNode = action.fromId ? nodeMap.get(action.fromId) : null
-          const toNode = action.toId ? nodeMap.get(action.toId) : null
-
-          if (fromNode && toNode) {
-            // Reveal packet at origin
-            tl.to(
-              q(`#pkt-${action.id}`),
-              {
-                x: fromNode.x,
-                y: fromNode.y,
-                opacity: 1,
-                duration: 0.05,
-              },
-              position
-            )
-              // Animate packet to destination
-              .to(q(`#pkt-${action.id}`), {
-                x: toNode.x,
-                y: toNode.y,
-                duration,
-                ease: "power2.inOut",
-              })
-              // Hide packet after arrival
-              .to(q(`#pkt-${action.id}`), {
-                opacity: 0,
-                duration: 0.1,
-              })
-          }
-          break
-        }
-      }
-    })
+    // Advance timeline to stepStartTime + stepDuration
+    currentTimelineTime = stepStartTime + stepDuration
+    tl.set({}, {}, currentTimelineTime)
   })
 
   return tl
