@@ -101,6 +101,7 @@ const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
       label: "Evaluación",
       color: "#0070F3",
       strokeWidth: 2,
+      labelPosition: 0.5,
     },
   ],
   steps: [
@@ -646,20 +647,12 @@ function BuilderContent() {
         </div>
       ) : (
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Main Top Area: Left (Assets & Element Inspector), Center (Canvas), Right (Step Inspector) */}
+          {/* Main Top Area: Left (Full Height Assets), Center (Canvas + Floating Inspector), Right (Step Inspector) */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Left: Assets Palette & Unified Element Inspector (Nodes AND Edges) */}
-            <AssetsSidebar
-              onAddNode={handleAddNode}
-              selectedNode={selectedUniversalNode}
-              onUpdateNode={handleUpdateNode}
-              onDeleteNode={handleDeleteNode}
-              selectedEdge={selectedEdge}
-              onUpdateEdge={handleUpdateEdge}
-              onDeleteEdge={handleDeleteEdge}
-            />
+            {/* Left: Multidisciplinary Assets Palette (100% Vertical Space) */}
+            <AssetsSidebar onAddNode={handleAddNode} />
 
-            {/* Center: React Flow Canvas (Snapping, Magnetic Handles, Loose connection, Context Menu) */}
+            {/* Center: React Flow Canvas (Loose Handles, Context Menu & Floating Property Panel in Top-Left) */}
             <Canvas
               nodes={nodes}
               edges={edges}
@@ -668,6 +661,8 @@ function BuilderContent() {
               onConnect={onConnect}
               selectedNodeId={selectedNodeId}
               selectedEdgeId={selectedEdgeId}
+              selectedNode={selectedUniversalNode}
+              selectedEdge={selectedEdge}
               onSelectNode={(id) => {
                 setSelectedNodeId(id)
                 if (id) setSelectedEdgeId(null)
@@ -676,6 +671,8 @@ function BuilderContent() {
                 setSelectedEdgeId(id)
                 if (id) setSelectedNodeId(null)
               }}
+              onUpdateNode={handleUpdateNode}
+              onUpdateEdge={handleUpdateEdge}
               onDeleteNode={handleDeleteNode}
               onDeleteEdge={handleDeleteEdge}
               onDuplicateNode={handleDuplicateNode}
