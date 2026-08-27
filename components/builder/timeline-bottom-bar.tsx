@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, Clock, Sparkles, GripVertical } from "lucide-react"
+import { Plus, Trash2, Clock, Sparkles, GripVertical, Sliders, HelpCircle, GitFork } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import type { DynamicStep } from "@/types/dynamic-animation"
+import type { UniversalStep } from "@/types/universal-animation"
 
 interface TimelineBottomBarProps {
-  steps: DynamicStep[]
+  steps: UniversalStep[]
   selectedStepIndex: number
   onSelectStep: (index: number) => void
   onAddStep: () => void
@@ -279,12 +279,22 @@ export function TimelineBottomBar({
                   {step.label || `Paso ${idx + 1}`}
                 </p>
 
-                {/* Actions Count */}
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
-                  <span className="truncate">
-                    {step.actions.length} {step.actions.length === 1 ? "acción" : "acciones"}
-                  </span>
+                {/* Actions & Interaction Count */}
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
+                    <span className="truncate">
+                      {step.actions.length} {step.actions.length === 1 ? "acción" : "acciones"}
+                    </span>
+                  </div>
+                  {step.interaction && (
+                    <div className="flex items-center gap-0.5 rounded bg-primary/15 px-1 py-0.5 font-mono text-[9px] font-bold text-primary">
+                      {step.interaction.type === "variable_slider" && <Sliders className="size-2.5" />}
+                      {step.interaction.type === "quiz" && <HelpCircle className="size-2.5 text-amber-500" />}
+                      {step.interaction.type === "branch_choice" && <GitFork className="size-2.5" />}
+                      <span className="capitalize">{step.interaction.type.split("_")[0]}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right Resize Handle */}

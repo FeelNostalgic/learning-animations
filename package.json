@@ -23,6 +23,7 @@
     "@tailwindcss/postcss": "^4.2.1",
     "@types/dompurify": "^3.0.5",
     "@types/katex": "^0.16.8",
+    "@xyflow/react": "^12.11.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.14",
