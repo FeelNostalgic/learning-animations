@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useMemo, useCallback } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import gsap from "gsap"
 import { useTheme } from "next-themes"
 import { useAnimationContext } from "./animation-player"
@@ -18,13 +18,13 @@ import { InteractionRuntime } from "@/lib/animations/interaction-runtime"
 import {
   compileUniversalTimeline,
   calculateConnectorPath,
+  sampleConnectorPoints,
   type UniversalPaletteColors,
 } from "@/lib/animations/universal-compiler"
 import type {
   UniversalAnimationData,
   UniversalNode,
   UniversalConnector,
-  UniversalAction,
 } from "@/types/universal-animation"
 
 interface UniversalAnimationPlayerProps {
@@ -79,9 +79,15 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
     return new Map(animation.nodes.map((n) => [n.id, n]))
   }, [animation.nodes])
 
-  // Sorted nodes by zIndex for proper layer depth rendering
-  const sortedNodes = useMemo(() => {
-    return [...animation.nodes].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+  // Separate container nodes (rendered in background layer) from interactive foreground nodes
+  const containerNodes = useMemo(() => {
+    return animation.nodes.filter((n) => n.type === "container")
+  }, [animation.nodes])
+
+  const foregroundNodes = useMemo(() => {
+    return animation.nodes
+      .filter((n) => n.type !== "container")
+      .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
   }, [animation.nodes])
 
   // Extract all actions from all steps
@@ -123,13 +129,14 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
   const renderNodeShape = (node: UniversalNode) => {
     const fill = node.fill || (resolvedTheme === "light" ? "#F8FAFC" : "#0F172A")
     const stroke = node.stroke || C.idle
-    const strokeWidth = node.strokeWidth || 1.5
+    const strokeWidth = node.strokeWidth !== undefined ? node.strokeWidth : 1.5
+    const hasStroke = strokeWidth > 0 && stroke !== "none" && stroke !== "transparent"
     const opacity = node.opacity !== undefined ? node.opacity : 1
 
     switch (node.type) {
       case "shape": {
         const shapeType = node.shapeDetails?.shapeType || "circle"
-        const r = node.shapeDetails?.radius || 36
+        const r = node.shapeDetails?.radius || (node.width ? node.width / 2 : 36)
         const w = node.width || node.shapeDetails?.width || 80
         const h = node.height || node.shapeDetails?.height || 50
 
@@ -139,8 +146,8 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               r={r}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
               opacity={opacity}
             />
           )
@@ -157,8 +164,8 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               rx={rx}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
               opacity={opacity}
             />
           )
@@ -170,8 +177,8 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               points={`0,${-r} ${r},0 0,${r} ${-r},0`}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
               opacity={opacity}
             />
           )
@@ -183,8 +190,8 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               points={`0,${-r} ${r},${r} ${-r},${r}`}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
               opacity={opacity}
             />
           )
@@ -195,8 +202,8 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
             r={r}
             className="node-shape transition-colors duration-200"
             fill={fill}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
+            stroke={hasStroke ? stroke : "none"}
+            strokeWidth={hasStroke ? strokeWidth : 0}
             opacity={opacity}
           />
         )
@@ -207,7 +214,7 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
         const h = node.height || 120
         const imgUrl = node.imageUrl || node.content || ""
         return (
-          <g>
+          <g opacity={opacity}>
             <rect
               x={-w / 2}
               y={-h / 2}
@@ -216,18 +223,24 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               rx={12}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
-              opacity={opacity}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
             />
             {imgUrl && (
               <image
                 href={imgUrl}
-                x={-w / 2 + 4}
-                y={-h / 2 + 4}
-                width={w - 8}
-                height={h - 8}
-                preserveAspectRatio="xMidYMid meet"
+                xlinkHref={imgUrl}
+                x={-w / 2 + 3}
+                y={-h / 2 + 3}
+                width={w - 6}
+                height={h - 6}
+                preserveAspectRatio={
+                  node.imageFit === "cover"
+                    ? "xMidYMid slice"
+                    : node.imageFit === "fill"
+                    ? "none"
+                    : "xMidYMid meet"
+                }
               />
             )}
           </g>
@@ -235,10 +248,10 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
       }
 
       case "math": {
-        const w = node.width || 180
-        const h = node.height || 64
+        const w = node.width || 200
+        const h = node.height || 70
         return (
-          <g>
+          <g opacity={opacity}>
             <rect
               x={-w / 2}
               y={-h / 2}
@@ -247,15 +260,14 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               rx={10}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
-              opacity={opacity}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
             />
             <foreignObject
-              x={-w / 2 + 8}
-              y={-h / 2 + 6}
-              width={w - 16}
-              height={h - 12}
+              x={-w / 2 + 6}
+              y={-h / 2 + 4}
+              width={w - 12}
+              height={h - 8}
               className="overflow-visible"
             >
               <div className="flex h-full w-full items-center justify-center text-center overflow-x-auto text-xs font-semibold text-foreground">
@@ -267,10 +279,10 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
       }
 
       case "text": {
-        const w = node.width || 200
-        const h = node.height || 90
+        const w = node.width || 220
+        const h = node.height || 100
         return (
-          <g>
+          <g opacity={opacity}>
             <rect
               x={-w / 2}
               y={-h / 2}
@@ -279,9 +291,8 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               rx={10}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
-              opacity={opacity}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
             />
             <foreignObject
               x={-w / 2 + 8}
@@ -298,38 +309,18 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
         )
       }
 
-      case "container": {
-        const w = node.width || 320
-        const h = node.height || 200
-        return (
-          <rect
-            x={-w / 2}
-            y={-h / 2}
-            width={w}
-            height={h}
-            rx={16}
-            className="node-shape transition-colors duration-200"
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-            strokeDasharray="6 6"
-            opacity={opacity * 0.4}
-          />
-        )
-      }
-
       case "network":
       default: {
         const netType = node.props?.networkType || "pc"
+        const r = node.width ? node.width / 2 : NETWORK_DEVICE_STYLE.radius
         return (
-          <g>
+          <g opacity={opacity}>
             <circle
-              r={NETWORK_DEVICE_STYLE.radius}
+              r={r}
               className="node-shape transition-colors duration-200"
               fill={fill}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
-              opacity={opacity}
+              stroke={hasStroke ? stroke : "none"}
+              strokeWidth={hasStroke ? strokeWidth : 0}
             />
             {netType === "pc" && <PcGlyph stroke={C.fg} />}
             {netType === "switch" && <SwitchGlyph stroke={C.fg} />}
@@ -374,7 +365,40 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
           </marker>
         </defs>
 
-        {/* ── 1. Connectors Layer ─────────────────────────────────────── */}
+        {/* ── 1. Background Containers Layer (Translucent & Non-Blocking) ── */}
+        <g id="containers-layer" className="pointer-events-none">
+          {containerNodes.map((cont) => {
+            const w = cont.width || 320
+            const h = cont.height || 200
+            return (
+              <g key={cont.id} transform={`translate(${cont.x}, ${cont.y})`} opacity={cont.opacity ?? 1}>
+                <rect
+                  x={-w / 2}
+                  y={-h / 2}
+                  width={w}
+                  height={h}
+                  rx={16}
+                  fill="rgba(100, 116, 139, 0.07)"
+                  stroke={cont.stroke || C.idle}
+                  strokeWidth={cont.strokeWidth || 1.5}
+                  strokeDasharray="6 6"
+                />
+                <text
+                  x={-w / 2 + 14}
+                  y={-h / 2 + 22}
+                  fill={C.subText}
+                  fontSize="11"
+                  fontWeight="bold"
+                  className="font-mono uppercase tracking-wider"
+                >
+                  {cont.label}
+                </text>
+              </g>
+            )
+          })}
+        </g>
+
+        {/* ── 2. Connectors Layer ─────────────────────────────────────── */}
         <g id="connectors-layer">
           {connectors.map((conn) => {
             const src = nodeMap.get(conn.sourceId)
@@ -386,6 +410,11 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               conn.directed === "forward" || conn.directed === "bidirectional"
             const hasBackwardArrow =
               conn.directed === "backward" || conn.directed === "bidirectional"
+
+            const labelPos = (conn as any).labelPosition !== undefined ? (conn as any).labelPosition : 0.5
+            const waypoints = sampleConnectorPoints(src, dst, conn.type || "bezier", 20)
+            const waypointIdx = Math.min(waypoints.length - 1, Math.max(0, Math.round(labelPos * (waypoints.length - 1))))
+            const labelPt = waypoints[waypointIdx] || { x: (src.x + dst.x) / 2, y: (src.y + dst.y) / 2 }
 
             return (
               <g key={conn.id}>
@@ -401,26 +430,37 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
                   className="transition-colors duration-200"
                 />
                 {conn.label && (
-                  <text
-                    x={(src.x + dst.x) / 2}
-                    y={(src.y + dst.y) / 2 - 8}
-                    fill={C.subText}
-                    fontSize="11"
-                    fontFamily="monospace"
-                    textAnchor="middle"
-                    className="select-none font-semibold"
-                  >
-                    {conn.label}
-                  </text>
+                  <g transform={`translate(${labelPt.x}, ${labelPt.y})`}>
+                    <rect
+                      x={-(conn.label.length * 3.5 + 8)}
+                      y={-14}
+                      width={conn.label.length * 7 + 16}
+                      height={18}
+                      rx={4}
+                      fill={resolvedTheme === "light" ? "rgba(255, 255, 255, 0.85)" : "rgba(15, 23, 42, 0.85)"}
+                      stroke={C.muted}
+                      strokeWidth={1}
+                    />
+                    <text
+                      y={-2}
+                      fill={C.fg}
+                      fontSize="10"
+                      fontFamily="monospace"
+                      textAnchor="middle"
+                      className="select-none font-semibold"
+                    >
+                      {conn.label}
+                    </text>
+                  </g>
                 )}
               </g>
             )
           })}
         </g>
 
-        {/* ── 2. Nodes Layer (Depth-Sorted by zIndex) ────────────────── */}
+        {/* ── 3. Foreground Nodes Layer (Depth-Sorted by zIndex) ─────── */}
         <g id="nodes-layer">
-          {sortedNodes.map((node) => {
+          {foregroundNodes.map((node) => {
             const hasLabel = node.type !== "text" && node.type !== "math" && node.type !== "image"
             return (
               <g
@@ -492,7 +532,7 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
           })}
         </g>
 
-        {/* ── 3. Animated Particles / Packets Layer ──────────────────── */}
+        {/* ── 4. Animated Particles / Packets Layer ──────────────────── */}
         <g id="packets-layer" className="pointer-events-none">
           {allActions.map((act) => {
             if (act.type !== "packet") return null
@@ -516,13 +556,11 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
         </g>
       </svg>
 
-      {/* ── 4. Interactive Overlays (Sliders, Quizzes, Decision Trees) ── */}
+      {/* ── 5. Interactive Overlays (Sliders, Quizzes, Decision Trees) ── */}
       <InteractionOverlay
         steps={animation.steps}
         runtime={runtimeRef.current}
-        onTriggerAction={(actionId) => {
-          // Trigger reactive GSAP micro-animation
-        }}
+        onTriggerAction={() => {}}
       />
     </div>
   )
