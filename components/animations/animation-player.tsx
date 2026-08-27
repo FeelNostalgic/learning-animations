@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EmbedDialog } from "./embed-dialog"
+import { MarkdownView } from "@/components/ui/markdown-view"
 import type { AnimationStep } from "@/types/animations"
 import type gsap from "gsap"
 import { cn } from "@/lib/utils"
@@ -174,6 +175,45 @@ export function AnimationPlayer({
       document.removeEventListener("fullscreenchange", handleFullscreenChange)
     }
   }, [])
+
+  // Keyboard Navigation & Accessibility (WCAG 2.2 Operable)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+
+      if (e.key === " " || e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        if (isPlaying) {
+          handlePause()
+        } else {
+          handlePlay()
+        }
+      } else if (e.key === "ArrowRight" || e.key.toLowerCase() === "l") {
+        e.preventDefault()
+        handleNext()
+      } else if (e.key === "ArrowLeft" || e.key.toLowerCase() === "j") {
+        e.preventDefault()
+        handlePrev()
+      } else if (e.key === "Home" || e.key.toLowerCase() === "r") {
+        e.preventDefault()
+        handleReset()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isPlaying, currentStep, steps.length])
 
   // Controls
   const handlePlay = () => {
@@ -568,6 +608,11 @@ export function AnimationPlayer({
           </div>
         </div>
 
+        {/* Live region for Screen Reader Announcements (WCAG 2.2) */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {activeStep ? `Paso ${currentStep + 1} de ${steps.length}: ${activeStep.label}. ${activeStep.description}` : ""}
+        </div>
+
         {/* Step description */}
         <div className="rounded-lg border border-border/50 bg-card px-4 py-3">
           <AnimatePresence mode="wait">
@@ -581,9 +626,7 @@ export function AnimationPlayer({
               <p className="text-xs font-mono text-primary mb-1 uppercase tracking-wider">
                 {activeStep?.label}
               </p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {activeStep?.description}
-              </p>
+              <MarkdownView content={activeStep?.description || ""} />
             </motion.div>
           </AnimatePresence>
         </div>
