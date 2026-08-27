@@ -13,6 +13,8 @@ import {
 } from "./network-device-icons"
 import { CloudGlyph } from "./network-visual-primitives"
 import { MarkdownView } from "@/components/ui/markdown-view"
+import { InteractionOverlay } from "./interaction-overlay"
+import { InteractionRuntime } from "@/lib/animations/interaction-runtime"
 import {
   compileUniversalTimeline,
   calculateConnectorPath,
@@ -37,6 +39,7 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
   const { registerTimeline } = useAnimationContext()
   const { resolvedTheme } = useTheme()
   const [selectedNode, setSelectedNode] = useState<UniversalNode | null>(null)
+  const runtimeRef = useRef<InteractionRuntime>(new InteractionRuntime())
 
   const C: UniversalPaletteColors = useMemo(
     () =>
@@ -487,6 +490,23 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
           })}
         </g>
       </svg>
+
+      {/* ── 4. Interactive Overlay Layer (Sliders, Quizzes, Decisions) ── */}
+      {animation.steps.map((step) => {
+        if (!step.interaction) return null
+        return (
+          <div
+            key={step.id}
+            className="absolute bottom-4 right-4 z-20 max-w-sm"
+          >
+            <InteractionOverlay
+              stepId={step.id}
+              interaction={step.interaction}
+              runtime={runtimeRef.current}
+            />
+          </div>
+        )
+      })}
     </div>
   )
 }
