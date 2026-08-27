@@ -166,9 +166,12 @@ export function compileUniversalTimeline(
       opacity: node.opacity ?? 1,
     })
 
+    const strokeWidth = node.strokeWidth !== undefined ? node.strokeWidth : 1.5
+    const hasStroke = strokeWidth > 0 && node.stroke !== "none" && node.stroke !== "transparent"
+
     gsap.set(q(`#node-${node.id} .node-shape`), {
-      stroke: node.stroke || C.idle,
-      strokeWidth: node.strokeWidth || 1.5,
+      stroke: hasStroke ? node.stroke || C.idle : "none",
+      strokeWidth: hasStroke ? strokeWidth : 0,
       fill: node.fill || "transparent",
       opacity: node.opacity ?? 1,
     })

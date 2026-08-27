@@ -30,20 +30,16 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Tag,
   PenLine,
-  X,
   FilePlus,
   Globe,
   Lock,
   GraduationCap,
-  Sparkles,
   Layers,
 } from "lucide-react"
 import type {
   UniversalAnimationData,
   UniversalNode,
-  UniversalConnector,
   UniversalStep,
   UniversalNodeType,
   DisciplineType,
@@ -78,6 +74,8 @@ const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
       fill: "var(--card)",
       stroke: "#0070F3",
       strokeWidth: 2,
+      width: 200,
+      height: 80,
     },
     {
       id: "node-root",
@@ -89,6 +87,8 @@ const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
       fill: "var(--card)",
       stroke: "#10B981",
       strokeWidth: 2,
+      width: 80,
+      height: 80,
     },
   ],
   connectors: [
@@ -100,6 +100,7 @@ const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
       directed: "forward",
       label: "Evaluación",
       color: "#0070F3",
+      strokeWidth: 2,
     },
   ],
   steps: [
@@ -150,7 +151,6 @@ function BuilderContent() {
   const [title, setTitle] = useState(INITIAL_UNIVERSAL_ANIMATION.title)
   const [discipline, setDiscipline] = useState<DisciplineType>(INITIAL_UNIVERSAL_ANIMATION.discipline)
   const [topic, setTopic] = useState(INITIAL_UNIVERSAL_ANIMATION.topic)
-  const [tagInput, setTagInput] = useState("")
   const [tags, setTags] = useState<string[]>(INITIAL_UNIVERSAL_ANIMATION.tags || [])
   const [description, setDescription] = useState(INITIAL_UNIVERSAL_ANIMATION.description)
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(INITIAL_UNIVERSAL_ANIMATION.difficulty)
@@ -163,6 +163,7 @@ function BuilderContent() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialRf.edges)
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [selectedStepIndex, setSelectedStepIndex] = useState(0)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -183,6 +184,8 @@ function BuilderContent() {
             data: {
               connectorType: "bezier",
               directed: "forward",
+              labelPosition: 0.5,
+              showLabel: true,
             },
           },
           eds
@@ -240,6 +243,7 @@ function BuilderContent() {
     setNodes(rf.nodes)
     setEdges(rf.edges)
     setSelectedNodeId(null)
+    setSelectedEdgeId(null)
     setSelectedStepIndex(0)
     setIsPreviewOpen(false)
     setStatusMessage({ type: "success", text: "Lienzo reiniciado para una nueva animación." })
@@ -250,28 +254,39 @@ function BuilderContent() {
   // Node operations
   const handleAddNode = (type: UniversalNodeType, preset?: Partial<UniversalNode>) => {
     const id = `node-${Date.now()}`
+    const width = preset?.width || (type === "math" ? 200 : type === "text" ? 220 : type === "image" ? 140 : type === "container" ? 320 : 100)
+    const height = preset?.height || (type === "math" ? 80 : type === "text" ? 110 : type === "image" ? 140 : type === "container" ? 200 : 60)
+
     const newNode: Node = {
       id,
       type,
       position: { x: 500, y: 250 },
+      zIndex: 0,
+      style: {
+        width,
+        height,
+        zIndex: 0,
+      },
       data: {
         label: preset?.label || `Nodo ${nodes.length + 1}`,
         content: preset?.content || "",
         fill: preset?.fill || "var(--card)",
         stroke: preset?.stroke || "var(--primary)",
-        strokeWidth: preset?.strokeWidth || 2,
+        strokeWidth: preset?.strokeWidth !== undefined ? preset.strokeWidth : 2,
         opacity: preset?.opacity ?? 1,
         imageUrl: preset?.imageUrl,
         imageFit: preset?.imageFit || "contain",
         shapeDetails: preset?.shapeDetails,
         props: preset?.props,
         nodeType: type,
-        width: preset?.width,
-        height: preset?.height,
+        width,
+        height,
+        zIndex: 0,
       },
     }
     setNodes((nds) => nds.concat(newNode))
     setSelectedNodeId(id)
+    setSelectedEdgeId(null)
   }
 
   const handleUpdateNode = (updatedNode: UniversalNode) => {
@@ -281,6 +296,13 @@ function BuilderContent() {
           return {
             ...n,
             position: { x: updatedNode.x, y: updatedNode.y },
+            style: {
+              ...n.style,
+              width: updatedNode.width,
+              height: updatedNode.height,
+              zIndex: updatedNode.zIndex ?? n.zIndex ?? 0,
+            },
+            zIndex: updatedNode.zIndex ?? n.zIndex ?? 0,
             data: {
               ...n.data,
               label: updatedNode.label,
@@ -295,6 +317,7 @@ function BuilderContent() {
               props: updatedNode.props,
               width: updatedNode.width,
               height: updatedNode.height,
+              zIndex: updatedNode.zIndex ?? n.zIndex ?? 0,
             },
           }
         }
@@ -307,6 +330,69 @@ function BuilderContent() {
     setNodes((nds) => nds.filter((n) => n.id !== nodeId))
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId))
     if (selectedNodeId === nodeId) setSelectedNodeId(null)
+  }
+
+  const handleDuplicateNode = (nodeId: string) => {
+    const sourceNode = nodes.find((n) => n.id === nodeId)
+    if (!sourceNode) return
+
+    const newId = `node-${Date.now()}`
+    const clonedNode: Node = {
+      ...sourceNode,
+      id: newId,
+      position: {
+        x: sourceNode.position.x + 40,
+        y: sourceNode.position.y + 40,
+      },
+      data: {
+        ...sourceNode.data,
+        label: `${sourceNode.data.label || "Nodo"} (Copia)`,
+      },
+      selected: true,
+    }
+
+    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(clonedNode))
+    setSelectedNodeId(newId)
+    setSelectedEdgeId(null)
+  }
+
+  const handleUpdateNodeZIndex = (nodeId: string, action: "front" | "back" | "up" | "down") => {
+    setNodes((nds) => {
+      const targetNode = nds.find((n) => n.id === nodeId)
+      if (!targetNode) return nds
+
+      const allZ = nds.map((n) => n.zIndex ?? 0)
+      const maxZ = Math.max(0, ...allZ)
+      const minZ = Math.min(0, ...allZ)
+      const currentZ = targetNode.zIndex ?? 0
+
+      let newZ = currentZ
+      if (action === "front") newZ = maxZ + 1
+      else if (action === "back") newZ = minZ - 1
+      else if (action === "up") newZ = currentZ + 1
+      else if (action === "down") newZ = currentZ - 1
+
+      return nds.map((n) =>
+        n.id === nodeId
+          ? {
+              ...n,
+              zIndex: newZ,
+              style: { ...n.style, zIndex: newZ },
+              data: { ...n.data, zIndex: newZ },
+            }
+          : n
+      )
+    })
+  }
+
+  // Edge operations
+  const handleUpdateEdge = (updatedEdge: Edge) => {
+    setEdges((eds) => eds.map((e) => (e.id === updatedEdge.id ? updatedEdge : e)))
+  }
+
+  const handleDeleteEdge = (edgeId: string) => {
+    setEdges((eds) => eds.filter((e) => e.id !== edgeId))
+    if (selectedEdgeId === edgeId) setSelectedEdgeId(null)
   }
 
   // Step operations
@@ -355,21 +441,6 @@ function BuilderContent() {
     setSelectedStepIndex(toIndex)
   }
 
-  // Tag management
-  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && tagInput.trim()) {
-      e.preventDefault()
-      if (!tags.includes(tagInput.trim())) {
-        setTags([...tags, tagInput.trim()])
-      }
-      setTagInput("")
-    }
-  }
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((t) => t !== tagToRemove))
-  }
-
   // Current compiled universal animation
   const currentUniversalData = reactFlowToUniversal(nodes, edges, steps, {
     id: animationId || undefined,
@@ -404,7 +475,7 @@ function BuilderContent() {
     }
   }
 
-  // Selected node
+  // Selected entities
   const selectedRfNode = nodes.find((n) => n.id === selectedNodeId)
   const selectedUniversalNode: UniversalNode | null = selectedRfNode
     ? {
@@ -422,11 +493,13 @@ function BuilderContent() {
         imageFit: selectedRfNode.data.imageFit as any,
         shapeDetails: selectedRfNode.data.shapeDetails as any,
         props: selectedRfNode.data.props as any,
-        width: selectedRfNode.data.width as number,
-        height: selectedRfNode.data.height as number,
+        width: typeof selectedRfNode.style?.width === "number" ? selectedRfNode.style.width : (selectedRfNode.data.width as number),
+        height: typeof selectedRfNode.style?.height === "number" ? selectedRfNode.style.height : (selectedRfNode.data.height as number),
+        zIndex: selectedRfNode.zIndex ?? (selectedRfNode.data.zIndex as number) ?? 0,
       }
     : null
 
+  const selectedEdge = edges.find((e) => e.id === selectedEdgeId) || null
   const selectedStep = steps[selectedStepIndex] || null
 
   if (isLoadingAnimation) {
@@ -442,7 +515,7 @@ function BuilderContent() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      {/* ── Sub Toolbar (Title, Free Topic, Discipline, Tags, Visibility) ── */}
+      {/* ── Sub Toolbar (Title, Free Topic, Discipline, Visibility) ── */}
       <div className="flex h-13 items-center justify-between border-b border-border/80 bg-card/70 px-4 shrink-0 shadow-xs gap-3 overflow-x-auto">
         <div className="flex items-center gap-2.5">
           {/* Title Editor */}
@@ -573,17 +646,20 @@ function BuilderContent() {
         </div>
       ) : (
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Main Top Area: Left (Assets), Center (React Flow Canvas), Right (Step Inspector) */}
+          {/* Main Top Area: Left (Assets & Element Inspector), Center (Canvas), Right (Step Inspector) */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Left: Multidisciplinary Assets Palette & Selected Node Inspector */}
+            {/* Left: Assets Palette & Unified Element Inspector (Nodes AND Edges) */}
             <AssetsSidebar
               onAddNode={handleAddNode}
               selectedNode={selectedUniversalNode}
               onUpdateNode={handleUpdateNode}
               onDeleteNode={handleDeleteNode}
+              selectedEdge={selectedEdge}
+              onUpdateEdge={handleUpdateEdge}
+              onDeleteEdge={handleDeleteEdge}
             />
 
-            {/* Center: React Flow Canvas (Snapping, Magnetic Handles, Minimap) */}
+            {/* Center: React Flow Canvas (Snapping, Magnetic Handles, Loose connection, Context Menu) */}
             <Canvas
               nodes={nodes}
               edges={edges}
@@ -591,11 +667,22 @@ function BuilderContent() {
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               selectedNodeId={selectedNodeId}
-              onSelectNode={setSelectedNodeId}
+              selectedEdgeId={selectedEdgeId}
+              onSelectNode={(id) => {
+                setSelectedNodeId(id)
+                if (id) setSelectedEdgeId(null)
+              }}
+              onSelectEdge={(id) => {
+                setSelectedEdgeId(id)
+                if (id) setSelectedNodeId(null)
+              }}
               onDeleteNode={handleDeleteNode}
+              onDeleteEdge={handleDeleteEdge}
+              onDuplicateNode={handleDuplicateNode}
+              onUpdateNodeZIndex={handleUpdateNodeZIndex}
             />
 
-            {/* Right: Step Actions & Interactivity Inspector */}
+            {/* Right: Step Actions & Interactivity Inspector (Always Step Inspector) */}
             <StepInspector
               step={selectedStep}
               stepIndex={selectedStepIndex}
