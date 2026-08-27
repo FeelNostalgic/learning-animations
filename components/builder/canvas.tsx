@@ -18,6 +18,8 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { nodeTypes } from "./nodes"
+import { edgeTypes } from "./edges"
+import { FloatingPropertyPanel } from "./floating-property-panel"
 import { useTheme } from "next-themes"
 import {
   ArrowUp,
@@ -27,6 +29,7 @@ import {
   Copy,
   Trash2,
 } from "lucide-react"
+import type { UniversalNode } from "@/types/universal-animation"
 
 interface ContextMenuState {
   x: number
@@ -42,8 +45,12 @@ interface CanvasProps {
   onConnect: OnConnect
   selectedNodeId: string | null
   selectedEdgeId: string | null
+  selectedNode: UniversalNode | null
+  selectedEdge: Edge | null
   onSelectNode: (nodeId: string | null) => void
   onSelectEdge: (edgeId: string | null) => void
+  onUpdateNode?: (node: UniversalNode) => void
+  onUpdateEdge?: (edge: Edge) => void
   onDeleteNode?: (nodeId: string) => void
   onDeleteEdge?: (edgeId: string) => void
   onDuplicateNode?: (nodeId: string) => void
@@ -58,8 +65,12 @@ export function Canvas({
   onConnect,
   selectedNodeId,
   selectedEdgeId,
+  selectedNode,
+  selectedEdge,
   onSelectNode,
   onSelectEdge,
+  onUpdateNode,
+  onUpdateEdge,
   onDeleteNode,
   onDeleteEdge,
   onDuplicateNode,
@@ -119,10 +130,8 @@ export function Canvas({
 
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedNodeId && onDeleteNode) {
-          e.preventDefault()
           onDeleteNode(selectedNodeId)
         } else if (selectedEdgeId && onDeleteEdge) {
-          e.preventDefault()
           onDeleteEdge(selectedEdgeId)
         }
       }
@@ -132,158 +141,155 @@ export function Canvas({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [selectedNodeId, selectedEdgeId, onDeleteNode, onDeleteEdge])
 
-  // Custom node color for MiniMap
-  const nodeColor = useCallback((node: Node) => {
-    switch (node.type) {
-      case "math":
-        return "#0070F3"
-      case "shape":
-        return "#10B981"
-      case "image":
-        return "#EC4899"
-      case "network":
-        return "#F59E0B"
-      case "text":
-        return "#8B5CF6"
-      case "container":
-        return "#64748B"
-      default:
-        return "#0070F3"
-    }
-  }, [])
-
   return (
-    <div
-      className="relative h-full w-full bg-background overflow-hidden select-none"
-      onClick={() => setContextMenu(null)}
-    >
+    <div className="relative flex-1 h-full w-full overflow-hidden bg-background">
+      {/* ── Floating Property Panel (Top-Left Canvas) ───────────── */}
+      {(selectedNode || selectedEdge) && (
+        <FloatingPropertyPanel
+          selectedNode={selectedNode}
+          onUpdateNode={onUpdateNode || (() => {})}
+          onDeleteNode={onDeleteNode || (() => {})}
+          selectedEdge={selectedEdge}
+          onUpdateEdge={onUpdateEdge || (() => {})}
+          onDeleteEdge={onDeleteEdge || (() => {})}
+          onClose={() => {
+            onSelectNode(null)
+            onSelectEdge(null)
+          }}
+        />
+      )}
+
       <ReactFlow
-        nodes={nodes.map((n) => ({
-          ...n,
-          selected: n.id === selectedNodeId,
-        }))}
-        edges={edges.map((e) => ({
-          ...e,
-          selected: e.id === selectedEdgeId,
-          style: {
-            ...e.style,
-            stroke: e.id === selectedEdgeId ? "var(--primary)" : e.style?.stroke || "#0070F3",
-            strokeWidth: e.id === selectedEdgeId ? 3.5 : e.style?.strokeWidth || 2,
-          },
-        }))}
+        nodes={nodes}
+        edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
-        onNodeContextMenu={handleNodeContextMenu}
         onPaneClick={handlePaneClick}
+        onNodeContextMenu={handleNodeContextMenu}
         connectionMode={ConnectionMode.Loose}
+        snapToGrid={true}
+        snapGrid={[16, 16]}
         fitView
         fitViewOptions={{ padding: 0.2 }}
-        snapToGrid
-        snapGrid={[16, 16]}
         minZoom={0.2}
         maxZoom={2.5}
-        defaultEdgeOptions={{
-          type: "smoothstep",
-          animated: true,
-          style: { stroke: isDark ? "#38BDF8" : "#0070F3", strokeWidth: 2 },
-        }}
-        className="touch-none"
+        className="h-full w-full"
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={16}
-          size={1.2}
+          gap={20}
+          size={1.5}
           color={isDark ? "#334155" : "#CBD5E1"}
         />
         <Controls
           showInteractive={false}
-          className="!bg-card/90 !border-border !shadow-lg !rounded-xl !overflow-hidden [&>button]:!border-border [&>button]:!bg-card [&>button]:hover:!bg-accent [&>button>svg]:!fill-foreground"
+          className="!bg-card/90 !border-border !shadow-md !rounded-xl overflow-hidden"
         />
         <MiniMap
-          nodeColor={nodeColor}
           nodeStrokeWidth={2}
-          zoomable
-          pannable
-          className="!bg-card/80 !border-border/80 !rounded-xl !shadow-xl !overflow-hidden hidden md:block"
-          maskColor={isDark ? "rgba(15, 23, 42, 0.7)" : "rgba(241, 245, 249, 0.7)"}
+          nodeColor={(n) => {
+            if (n.type === "shape") return "var(--primary)"
+            if (n.type === "math") return "#8B5CF6"
+            if (n.type === "text") return "#3B82F6"
+            if (n.type === "image") return "#EC4899"
+            return "#64748B"
+          }}
+          className="!bg-card/90 !border-border !rounded-xl !shadow-md"
         />
       </ReactFlow>
 
-      {/* ── Context Menu (Right Click on Node) ──────────────────────── */}
+      {/* ── Right-Click Context Menu ──────────────────────────────── */}
       {contextMenu && (
-        <div
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-          className="fixed z-50 min-w-[160px] rounded-xl border border-border bg-card/95 p-1 text-xs shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={() => {
-              onUpdateNodeZIndex?.(contextMenu.nodeId, "front")
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setContextMenu(null)}
+            onContextMenu={(e) => {
+              e.preventDefault()
               setContextMenu(null)
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
-          >
-            <ArrowUp className="size-3.5 text-primary" />
-            <span>Traer al frente</span>
-          </button>
-          <button
-            onClick={() => {
-              onUpdateNodeZIndex?.(contextMenu.nodeId, "up")
-              setContextMenu(null)
+          />
+          <div
+            style={{
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`,
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
+            className="fixed z-50 min-w-44 rounded-xl border border-border bg-card/95 p-1.5 shadow-2xl backdrop-blur-md text-xs select-none space-y-0.5"
           >
-            <ChevronUp className="size-3.5 text-primary" />
-            <span>Subir un nivel</span>
-          </button>
-          <button
-            onClick={() => {
-              onUpdateNodeZIndex?.(contextMenu.nodeId, "down")
-              setContextMenu(null)
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
-          >
-            <ChevronDown className="size-3.5 text-muted-foreground" />
-            <span>Bajar un nivel</span>
-          </button>
-          <button
-            onClick={() => {
-              onUpdateNodeZIndex?.(contextMenu.nodeId, "back")
-              setContextMenu(null)
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
-          >
-            <ArrowDown className="size-3.5 text-muted-foreground" />
-            <span>Enviar al fondo</span>
-          </button>
+            <button
+              onClick={() => {
+                onUpdateNodeZIndex?.(contextMenu.nodeId, "front")
+                setContextMenu(null)
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
+            >
+              <ArrowUp className="size-3.5 text-primary" />
+              <span>Traer al frente</span>
+            </button>
 
-          <div className="my-1 border-t border-border" />
+            <button
+              onClick={() => {
+                onUpdateNodeZIndex?.(contextMenu.nodeId, "up")
+                setContextMenu(null)
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
+            >
+              <ChevronUp className="size-3.5 text-muted-foreground" />
+              <span>Subir un nivel</span>
+            </button>
 
-          <button
-            onClick={() => {
-              onDuplicateNode?.(contextMenu.nodeId)
-              setContextMenu(null)
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
-          >
-            <Copy className="size-3.5 text-emerald-500" />
-            <span>Duplicar nodo</span>
-          </button>
-          <button
-            onClick={() => {
-              onDeleteNode?.(contextMenu.nodeId)
-              setContextMenu(null)
-            }}
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-destructive hover:bg-destructive/10 cursor-pointer"
-          >
-            <Trash2 className="size-3.5" />
-            <span>Eliminar</span>
-          </button>
-        </div>
+            <button
+              onClick={() => {
+                onUpdateNodeZIndex?.(contextMenu.nodeId, "down")
+                setContextMenu(null)
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
+            >
+              <ChevronDown className="size-3.5 text-muted-foreground" />
+              <span>Bajar un nivel</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onUpdateNodeZIndex?.(contextMenu.nodeId, "back")
+                setContextMenu(null)
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
+            >
+              <ArrowDown className="size-3.5 text-muted-foreground" />
+              <span>Enviar al fondo</span>
+            </button>
+
+            <div className="my-1 border-t border-border" />
+
+            <button
+              onClick={() => {
+                onDuplicateNode?.(contextMenu.nodeId)
+                setContextMenu(null)
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-accent cursor-pointer"
+            >
+              <Copy className="size-3.5 text-emerald-500" />
+              <span>Duplicar nodo</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onDeleteNode?.(contextMenu.nodeId)
+                setContextMenu(null)
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-destructive hover:bg-destructive/10 cursor-pointer"
+            >
+              <Trash2 className="size-3.5" />
+              <span>Eliminar nodo</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   )
