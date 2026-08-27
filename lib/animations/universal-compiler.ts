@@ -24,12 +24,17 @@ export interface UniversalPaletteColors {
   [key: string]: string
 }
 
+export interface Point2D {
+  x: number
+  y: number
+}
+
 /**
  * Calculates SVG path data between two coordinates for various connector types.
  */
 export function calculateConnectorPath(
-  source: { x: number; y: number },
-  target: { x: number; y: number },
+  source: Point2D,
+  target: Point2D,
   type: ConnectorType = "straight"
 ): string {
   const dx = target.x - source.x
@@ -64,6 +69,74 @@ export function calculateConnectorPath(
 }
 
 /**
+ * Samples N precise geometric waypoints along a connector trajectory for smooth path-following animations.
+ */
+export function sampleConnectorPoints(
+  source: Point2D,
+  target: Point2D,
+  type: ConnectorType = "straight",
+  sampleCount: number = 20
+): Point2D[] {
+  const count = Math.max(2, sampleCount)
+  const points: Point2D[] = []
+  const dx = target.x - source.x
+  const dy = target.y - source.y
+
+  if (type === "bezier") {
+    const p0 = source
+    const p1 = { x: source.x + dx * 0.5, y: source.y }
+    const p2 = { x: source.x + dx * 0.5, y: target.y }
+    const p3 = target
+
+    for (let i = 0; i < count; i++) {
+      const t = i / (count - 1)
+      const u = 1 - t
+      const tt = t * t
+      const uu = u * u
+      const uuu = uu * u
+      const ttt = tt * t
+
+      const x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x
+      const y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
+      points.push({ x: +x.toFixed(2), y: +y.toFixed(2) })
+    }
+    return points
+  }
+
+  if (type === "orthogonal") {
+    const midX = source.x + dx * 0.5
+    const corner1 = { x: midX, y: source.y }
+    const corner2 = { x: midX, y: target.y }
+
+    for (let i = 0; i < count; i++) {
+      const t = i / (count - 1)
+      if (t <= 0.33) {
+        const segT = t / 0.33
+        points.push({ x: +(source.x + segT * (corner1.x - source.x)).toFixed(2), y: source.y })
+      } else if (t <= 0.66) {
+        const segT = (t - 0.33) / 0.33
+        points.push({ x: midX, y: +(corner1.y + segT * (corner2.y - corner1.y)).toFixed(2) })
+      } else {
+        const segT = (t - 0.66) / 0.34
+        points.push({ x: +(corner2.x + segT * (target.x - corner2.x)).toFixed(2), y: target.y })
+      }
+    }
+    return points
+  }
+
+  // Straight line sampling
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1)
+    points.push({
+      x: +(source.x + t * dx).toFixed(2),
+      y: +(source.y + t * dy).toFixed(2),
+    })
+  }
+
+  return points
+}
+
+/**
  * Compiles a Universal Animation definition into an executable, frame-accurate GSAP timeline.
  */
 export function compileUniversalTimeline(
@@ -73,6 +146,15 @@ export function compileUniversalTimeline(
 ): gsap.core.Timeline {
   const tl = gsap.timeline({ paused: true })
   const nodeMap = new Map<string, UniversalNode>(animation.nodes.map((n) => [n.id, n]))
+  const connectors = animation.connectors || (animation as any).links || []
+  const connectorMap = new Map<string, UniversalConnector>()
+
+  connectors.forEach((conn: any) => {
+    const sId = conn.sourceId || conn.source
+    const tId = conn.targetId || conn.target
+    connectorMap.set(`${sId}->${tId}`, conn)
+    connectorMap.set(conn.id, conn)
+  })
 
   // 1. Initial State Setup
   animation.nodes.forEach((node) => {
@@ -88,7 +170,7 @@ export function compileUniversalTimeline(
       stroke: node.stroke || C.idle,
       strokeWidth: node.strokeWidth || 1.5,
       fill: node.fill || "transparent",
-      opacity: 1,
+      opacity: node.opacity ?? 1,
     })
 
     gsap.set(q(`#node-${node.id} .ring`), {
@@ -103,16 +185,15 @@ export function compileUniversalTimeline(
   })
 
   // Initial connector states
-  const connectors = animation.connectors || []
-  connectors.forEach((conn) => {
+  connectors.forEach((conn: any) => {
     gsap.set(q(`#conn-${conn.id}`), {
       stroke: conn.color ? C[conn.color] || conn.color : C.idle,
-      strokeWidth: conn.strokeWidth || 1.5,
+      strokeWidth: conn.strokeWidth || 2,
       opacity: 1,
     })
   })
 
-  // Initial packet and tooltip states
+  // Initial packet, tooltip and path draw states
   animation.steps.forEach((step) => {
     step.actions.forEach((action) => {
       if (action.type === "packet" && action.fromId) {
@@ -200,7 +281,7 @@ export function compileUniversalTimeline(
                 q(`#node-${action.targetId} .node-shape`),
                 {
                   stroke: colorVal,
-                  strokeWidth: 2.5,
+                  strokeWidth: 3,
                   opacity: 1,
                   duration: actionDuration,
                   ease,
@@ -217,7 +298,7 @@ export function compileUniversalTimeline(
                 q(`#node-${action.targetId} .ring`),
                 {
                   scale: 1.6,
-                  opacity: 0.6,
+                  opacity: 0.7,
                   repeat: 2,
                   yoyo: true,
                   ease: "power1.inOut",
@@ -280,10 +361,19 @@ export function compileUniversalTimeline(
             const toNode = action.toId ? nodeMap.get(action.toId) : null
 
             if (fromNode && toNode) {
+              const matchingConn =
+                connectorMap.get(`${action.fromId}->${action.toId}`) ||
+                connectorMap.get(`${action.toId}->${action.fromId}`) ||
+                (action.connectorId ? connectorMap.get(action.connectorId) : null)
+
+              const connType = matchingConn?.type || "bezier"
+              const waypoints = sampleConnectorPoints(fromNode, toNode, connType, 20)
+
               const appearDuration = 0.06
               const moveDuration = Math.max(0.2, actionDuration - 0.16)
               const hideDuration = 0.1
 
+              // 1. Appear at source
               tl.to(
                 q(`#pkt-${action.id}`),
                 {
@@ -294,24 +384,33 @@ export function compileUniversalTimeline(
                 },
                 actionStart
               )
-                .to(
-                  q(`#pkt-${action.id}`),
-                  {
-                    x: toNode.x,
-                    y: toNode.y,
-                    duration: moveDuration,
-                    ease: "power2.inOut",
-                  },
-                  actionStart + appearDuration
-                )
-                .to(
-                  q(`#pkt-${action.id}`),
-                  {
-                    opacity: 0,
-                    duration: hideDuration,
-                  },
-                  actionStart + appearDuration + moveDuration
-                )
+
+              // 2. Travel along the exact geometric path (curve/step) using sampled keyframes
+              const stepInterval = moveDuration / (waypoints.length - 1)
+              waypoints.forEach((pt, ptIdx) => {
+                if (ptIdx > 0) {
+                  tl.to(
+                    q(`#pkt-${action.id}`),
+                    {
+                      x: pt.x,
+                      y: pt.y,
+                      duration: stepInterval,
+                      ease: "none",
+                    },
+                    actionStart + appearDuration + (ptIdx - 1) * stepInterval
+                  )
+                }
+              })
+
+              // 3. Hide at target
+              tl.to(
+                q(`#pkt-${action.id}`),
+                {
+                  opacity: 0,
+                  duration: hideDuration,
+                },
+                actionStart + appearDuration + moveDuration
+              )
             }
             break
           }
@@ -335,7 +434,7 @@ export function compileUniversalTimeline(
               tl.to(
                 q(`#node-${action.targetId}`),
                 {
-                  scale: 1.1,
+                  scale: 1.15,
                   duration: actionDuration * 0.4,
                   yoyo: true,
                   repeat: 1,

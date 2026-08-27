@@ -7,6 +7,7 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  MarkerType,
   type Connection,
   type Edge,
   type Node,
@@ -36,6 +37,8 @@ import {
   Globe,
   Lock,
   GraduationCap,
+  Sparkles,
+  Layers,
 } from "lucide-react"
 import type {
   UniversalAnimationData,
@@ -58,7 +61,7 @@ const DISCIPLINES: { key: DisciplineType; label: string }[] = [
 
 const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
   title: "Concepto Educativo Interactivo",
-  description: "Explicación paso a paso de conceptos abstractos.",
+  description: "Explicación paso a paso de conceptos abstractos con KaTeX y trayectorias.",
   discipline: "math",
   topic: "Cálculo y Álgebra",
   tags: ["educación", "interactivo"],
@@ -72,6 +75,9 @@ const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
       x: 320,
       y: 220,
       content: "f(x) = x^2 - 4x + 4",
+      fill: "var(--card)",
+      stroke: "#0070F3",
+      strokeWidth: 2,
     },
     {
       id: "node-root",
@@ -81,7 +87,8 @@ const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
       y: 220,
       shapeDetails: { shapeType: "circle", radius: 36 },
       fill: "var(--card)",
-      stroke: "var(--primary)",
+      stroke: "#10B981",
+      strokeWidth: 2,
     },
   ],
   connectors: [
@@ -92,6 +99,7 @@ const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
       type: "bezier",
       directed: "forward",
       label: "Evaluación",
+      color: "#0070F3",
     },
   ],
   steps: [
@@ -142,6 +150,8 @@ function BuilderContent() {
   const [title, setTitle] = useState(INITIAL_UNIVERSAL_ANIMATION.title)
   const [discipline, setDiscipline] = useState<DisciplineType>(INITIAL_UNIVERSAL_ANIMATION.discipline)
   const [topic, setTopic] = useState(INITIAL_UNIVERSAL_ANIMATION.topic)
+  const [tagInput, setTagInput] = useState("")
+  const [tags, setTags] = useState<string[]>(INITIAL_UNIVERSAL_ANIMATION.tags || [])
   const [description, setDescription] = useState(INITIAL_UNIVERSAL_ANIMATION.description)
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(INITIAL_UNIVERSAL_ANIMATION.difficulty)
   const [isPublic, setIsPublic] = useState(INITIAL_UNIVERSAL_ANIMATION.is_public)
@@ -159,7 +169,7 @@ function BuilderContent() {
   const [isLoadingAnimation, setIsLoadingAnimation] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
-  // Connect handler in React Flow
+  // Connect handler in React Flow with forward arrowhead by default
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) =>
@@ -168,7 +178,12 @@ function BuilderContent() {
             ...connection,
             type: "smoothstep",
             animated: true,
-            style: { stroke: "var(--primary)", strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--primary, #0070F3)" },
+            style: { stroke: "var(--primary, #0070F3)", strokeWidth: 2 },
+            data: {
+              connectorType: "bezier",
+              directed: "forward",
+            },
           },
           eds
         )
@@ -192,6 +207,7 @@ function BuilderContent() {
         setTitle(anim.title)
         setDiscipline(anim.discipline || "general")
         setTopic(anim.topic)
+        setTags(anim.tags || [])
         setDescription(anim.description || "")
         setDifficulty(anim.difficulty || "beginner")
         setIsPublic(anim.is_public ?? false)
@@ -213,7 +229,8 @@ function BuilderContent() {
     setAnimationId(null)
     setTitle("Nueva Animación Educativa")
     setDiscipline("general")
-    setTopic("Tema General")
+    setTopic("Tema Personalizado")
+    setTags(["educación"])
     setDescription("Descripción pedagógica...")
     setDifficulty("beginner")
     setIsPublic(false)
@@ -242,9 +259,15 @@ function BuilderContent() {
         content: preset?.content || "",
         fill: preset?.fill || "var(--card)",
         stroke: preset?.stroke || "var(--primary)",
+        strokeWidth: preset?.strokeWidth || 2,
+        opacity: preset?.opacity ?? 1,
+        imageUrl: preset?.imageUrl,
+        imageFit: preset?.imageFit || "contain",
         shapeDetails: preset?.shapeDetails,
         props: preset?.props,
         nodeType: type,
+        width: preset?.width,
+        height: preset?.height,
       },
     }
     setNodes((nds) => nds.concat(newNode))
@@ -264,8 +287,14 @@ function BuilderContent() {
               content: updatedNode.content,
               fill: updatedNode.fill,
               stroke: updatedNode.stroke,
+              strokeWidth: updatedNode.strokeWidth,
+              opacity: updatedNode.opacity,
+              imageUrl: updatedNode.imageUrl,
+              imageFit: updatedNode.imageFit,
               shapeDetails: updatedNode.shapeDetails,
               props: updatedNode.props,
+              width: updatedNode.width,
+              height: updatedNode.height,
             },
           }
         }
@@ -326,6 +355,21 @@ function BuilderContent() {
     setSelectedStepIndex(toIndex)
   }
 
+  // Tag management
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && tagInput.trim()) {
+      e.preventDefault()
+      if (!tags.includes(tagInput.trim())) {
+        setTags([...tags, tagInput.trim()])
+      }
+      setTagInput("")
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter((t) => t !== tagToRemove))
+  }
+
   // Current compiled universal animation
   const currentUniversalData = reactFlowToUniversal(nodes, edges, steps, {
     id: animationId || undefined,
@@ -333,6 +377,7 @@ function BuilderContent() {
     description,
     discipline,
     topic,
+    tags,
     difficulty,
     is_public: isPublic,
   })
@@ -371,8 +416,14 @@ function BuilderContent() {
         content: selectedRfNode.data.content as string,
         fill: selectedRfNode.data.fill as string,
         stroke: selectedRfNode.data.stroke as string,
+        strokeWidth: selectedRfNode.data.strokeWidth as number,
+        opacity: selectedRfNode.data.opacity as number,
+        imageUrl: selectedRfNode.data.imageUrl as string,
+        imageFit: selectedRfNode.data.imageFit as any,
         shapeDetails: selectedRfNode.data.shapeDetails as any,
         props: selectedRfNode.data.props as any,
+        width: selectedRfNode.data.width as number,
+        height: selectedRfNode.data.height as number,
       }
     : null
 
@@ -391,9 +442,9 @@ function BuilderContent() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      {/* ── Sub Toolbar (Title, Discipline, Visibility) ─────────────── */}
-      <div className="flex h-12 items-center justify-between border-b border-border/80 bg-card/70 px-4 shrink-0 shadow-xs gap-3">
-        <div className="flex items-center gap-3">
+      {/* ── Sub Toolbar (Title, Free Topic, Discipline, Tags, Visibility) ── */}
+      <div className="flex h-13 items-center justify-between border-b border-border/80 bg-card/70 px-4 shrink-0 shadow-xs gap-3 overflow-x-auto">
+        <div className="flex items-center gap-2.5">
           {/* Title Editor */}
           <div className="flex items-center gap-2 rounded-lg border border-border bg-background/80 px-2.5 py-1 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30">
             <PenLine className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -401,14 +452,27 @@ function BuilderContent() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-44 md:w-60 bg-transparent text-xs font-bold text-foreground focus:outline-none"
+              className="w-40 md:w-56 bg-transparent text-xs font-bold text-foreground focus:outline-none"
               placeholder="Título de la animación..."
               title="Haz clic para editar el título"
             />
           </div>
 
-          {/* Discipline Selector */}
+          {/* Free Custom Category / Topic */}
           <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background/80 px-2.5 py-1">
+            <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              className="w-32 md:w-44 bg-transparent text-xs font-semibold text-foreground focus:outline-none"
+              placeholder="Categoría / Tema libre..."
+              title="Escribe cualquier categoría personalizada"
+            />
+          </div>
+
+          {/* Discipline Selector */}
+          <div className="hidden sm:flex items-center gap-1.5 rounded-lg border border-border bg-background/80 px-2.5 py-1">
             <GraduationCap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <select
               value={discipline}
@@ -436,7 +500,7 @@ function BuilderContent() {
             title={isPublic ? "Animación pública visible en el catálogo" : "Animación privada/borrador"}
           >
             {isPublic ? <Globe className="size-3.5" /> : <Lock className="size-3.5" />}
-            <span className="hidden sm:inline">{isPublic ? "Pública" : "Privada"}</span>
+            <span className="hidden md:inline">{isPublic ? "Pública" : "Privada"}</span>
           </button>
         </div>
 
@@ -453,7 +517,7 @@ function BuilderContent() {
               ) : (
                 <AlertCircle className="h-3.5 w-3.5" />
               )}
-              <span className="hidden md:inline">{statusMessage.text}</span>
+              <span className="hidden lg:inline">{statusMessage.text}</span>
             </div>
           )}
 

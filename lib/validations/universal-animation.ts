@@ -15,6 +15,7 @@ export const universalNodeTypeEnum = z.enum([
   "shape",
   "math",
   "text",
+  "image",
   "code",
   "network",
   "icon",
@@ -57,6 +58,11 @@ export const universalNodeSchema = z.object({
   opacity: z.number().min(0).max(1).optional(),
   rotation: z.number().optional(),
   scale: z.number().optional(),
+  zIndex: z.number().optional(),
+  textColor: z.string().optional(),
+  iconColor: z.string().optional(),
+  imageUrl: z.string().optional(),
+  imageFit: z.enum(["contain", "cover", "fill"]).optional(),
   content: z.string().optional(),
   iconName: z.string().optional(),
   shapeDetails: shapeDetailsSchema.optional(),
@@ -66,6 +72,7 @@ export const universalNodeSchema = z.object({
 
 export const connectorTypeEnum = z.enum(["straight", "bezier", "orthogonal", "arc"])
 export const connectorDirectedEnum = z.enum(["none", "forward", "backward", "bidirectional"])
+export const arrowheadKindEnum = z.enum(["none", "arrow", "circle", "diamond"])
 
 export const universalConnectorSchema = z.object({
   id: z.string().min(1),
@@ -73,6 +80,8 @@ export const universalConnectorSchema = z.object({
   targetId: z.string().min(1),
   type: connectorTypeEnum.optional().default("straight"),
   directed: connectorDirectedEnum.optional().default("none"),
+  arrowStart: arrowheadKindEnum.optional(),
+  arrowEnd: arrowheadKindEnum.optional(),
   dashed: z.boolean().optional().default(false),
   color: z.string().optional(),
   strokeWidth: z.number().positive().optional(),
