@@ -1,14 +1,27 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import React, { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
+import {
+  ReactFlowProvider,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  type Connection,
+  type Edge,
+  type Node,
+} from "@xyflow/react"
 import { AssetsSidebar } from "@/components/builder/assets-sidebar"
 import { Canvas } from "@/components/builder/canvas"
 import { TimelineBottomBar } from "@/components/builder/timeline-bottom-bar"
 import { StepInspector } from "@/components/builder/step-inspector"
 import { AnimationPlayer } from "@/components/animations/animation-player"
-import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
+import { UniversalAnimationPlayer } from "@/components/animations/universal-animation-player"
 import { saveAnimation, getAnimationById } from "@/app/builder/actions"
+import {
+  universalToReactFlow,
+  reactFlowToUniversal,
+} from "@/lib/animations/react-flow-adapter"
 import { Button } from "@/components/ui/button"
 import {
   Save,
@@ -20,75 +33,124 @@ import {
   PenLine,
   X,
   FilePlus,
+  Globe,
+  Lock,
+  GraduationCap,
 } from "lucide-react"
 import type {
-  DynamicAnimationData,
-  DynamicNode,
-  DynamicLink,
-  DynamicStep,
-  NodeType,
-} from "@/types/dynamic-animation"
+  UniversalAnimationData,
+  UniversalNode,
+  UniversalConnector,
+  UniversalStep,
+  UniversalNodeType,
+  DisciplineType,
+  DifficultyLevel,
+} from "@/types/universal-animation"
 
-const TOPIC_SUGGESTIONS = [
-  "Acceso a la Red",
-  "Capa de Internet / IP",
-  "Capa de Transporte",
-  "Capa de Aplicación",
-  "Seguridad y Cifrado",
+const DISCIPLINES: { key: DisciplineType; label: string }[] = [
+  { key: "general", label: "General" },
+  { key: "math", label: "Matemáticas" },
+  { key: "physics", label: "Física" },
+  { key: "computer_science", label: "Computación / TI" },
+  { key: "chemistry", label: "Química" },
+  { key: "biology", label: "Biología" },
 ]
 
-const INITIAL_NODES: DynamicNode[] = [
-  { id: "node-pc-a", type: "pc", label: "PC A", x: 300, y: 480, ip: "192.168.1.10", mac: "AA:BB:CC:11:22:33" },
-  { id: "node-sw", type: "switch", label: "Switch", x: 640, y: 240 },
-  { id: "node-pc-b", type: "pc", label: "PC B", x: 980, y: 480, ip: "192.168.1.20", mac: "B4:22:DA:FF:11:22" },
-]
-
-const INITIAL_LINKS: DynamicLink[] = [
-  { id: "link-1", source: "node-pc-a", target: "node-sw", dashed: true },
-  { id: "link-2", source: "node-pc-b", target: "node-sw", dashed: true },
-]
-
-const INITIAL_STEPS: DynamicStep[] = [
-  {
-    id: "step-1",
-    label: "1. PC A prepara el envío",
-    description: "PC A quiere comunicarse con PC B y resalta en amarillo para iniciar la petición.",
-    duration: 2.0,
-    actions: [
-      { id: "act-1", type: "highlight", targetId: "node-pc-a", color: "warn" },
-      { id: "act-2", type: "pulse", targetId: "node-pc-a" },
-    ],
-  },
-  {
-    id: "step-2",
-    label: "2. Envío de paquete al Switch",
-    description: "La trama sale de PC A con destino al Switch central.",
-    duration: 2.5,
-    actions: [
-      {
-        id: "act-3",
-        type: "packet",
-        fromId: "node-pc-a",
-        toId: "node-sw",
-        text: "ARP REQ",
-        color: "warn",
+const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
+  title: "Concepto Educativo Interactivo",
+  description: "Explicación paso a paso de conceptos abstractos.",
+  discipline: "math",
+  topic: "Cálculo y Álgebra",
+  tags: ["educación", "interactivo"],
+  difficulty: "intermediate",
+  is_public: false,
+  nodes: [
+    {
+      id: "node-func",
+      type: "math",
+      label: "Función f(x)",
+      x: 320,
+      y: 220,
+      content: "f(x) = x^2 - 4x + 4",
+    },
+    {
+      id: "node-root",
+      type: "shape",
+      label: "Raíz x = 2",
+      x: 720,
+      y: 220,
+      shapeDetails: { shapeType: "circle", radius: 36 },
+      fill: "var(--card)",
+      stroke: "var(--primary)",
+    },
+  ],
+  connectors: [
+    {
+      id: "conn-1",
+      sourceId: "node-func",
+      targetId: "node-root",
+      type: "bezier",
+      directed: "forward",
+      label: "Evaluación",
+    },
+  ],
+  steps: [
+    {
+      id: "step-1",
+      label: "1. Planteamiento de la función",
+      description: "Analizamos la función cuadrática $f(x) = (x-2)^2$.",
+      duration: 2.5,
+      actions: [
+        { id: "act-1", type: "highlight", targetId: "node-func", color: "active" },
+        { id: "act-2", type: "pulse", targetId: "node-func" },
+      ],
+      interaction: {
+        type: "variable_slider",
+        variableName: "x",
+        min: -5,
+        max: 5,
+        step: 0.5,
+        defaultValue: 2,
       },
-    ],
-  },
-]
+    },
+    {
+      id: "step-2",
+      label: "2. Comprobación de la raíz",
+      description: "Para $x = 2$, el valor de $f(2) = 0$.",
+      duration: 2.0,
+      actions: [
+        { id: "act-3", type: "highlight", targetId: "node-root", color: "success" },
+        { id: "act-4", type: "badge", targetId: "node-root", text: "f(2) = 0" },
+      ],
+      interaction: {
+        type: "quiz",
+        question: "¿Cuántas raíces reales tiene la función $f(x) = (x-2)^2$?",
+        options: [
+          { id: "opt-1", text: "1 raíz real doble ($x=2$)", isCorrect: true, feedback: "¡Correcto! El discriminante $\\Delta = 0$." },
+          { id: "opt-2", text: "2 raíces reales distintas", isCorrect: false, feedback: "Incorrecto, la gráfica es tangente al eje x." },
+        ],
+      },
+    },
+  ],
+}
 
 function BuilderContent() {
   const searchParams = useSearchParams()
   const editId = searchParams.get("id")
 
   const [animationId, setAnimationId] = useState<string | null>(editId)
-  const [title, setTitle] = useState("Nueva Animación de Red")
-  const [topic, setTopic] = useState("Acceso a la Red")
-  const [description, setDescription] = useState("Descripción pedagógica de la animación")
-  const [nodes, setNodes] = useState<DynamicNode[]>(INITIAL_NODES)
-  const [links, setLinks] = useState<DynamicLink[]>(INITIAL_LINKS)
-  const [steps, setSteps] = useState<DynamicStep[]>(INITIAL_STEPS)
-  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null)
+  const [title, setTitle] = useState(INITIAL_UNIVERSAL_ANIMATION.title)
+  const [discipline, setDiscipline] = useState<DisciplineType>(INITIAL_UNIVERSAL_ANIMATION.discipline)
+  const [topic, setTopic] = useState(INITIAL_UNIVERSAL_ANIMATION.topic)
+  const [description, setDescription] = useState(INITIAL_UNIVERSAL_ANIMATION.description)
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(INITIAL_UNIVERSAL_ANIMATION.difficulty)
+  const [isPublic, setIsPublic] = useState(INITIAL_UNIVERSAL_ANIMATION.is_public)
+  const [steps, setSteps] = useState<UniversalStep[]>(INITIAL_UNIVERSAL_ANIMATION.steps)
+
+  // React Flow State
+  const initialRf = universalToReactFlow(INITIAL_UNIVERSAL_ANIMATION)
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialRf.nodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialRf.edges)
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedStepIndex, setSelectedStepIndex] = useState(0)
@@ -96,7 +158,24 @@ function BuilderContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingAnimation, setIsLoadingAnimation] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
-  const [isCustomTopic, setIsCustomTopic] = useState(false)
+
+  // Connect handler in React Flow
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...connection,
+            type: "smoothstep",
+            animated: true,
+            style: { stroke: "var(--primary)", strokeWidth: 2 },
+          },
+          eds
+        )
+      )
+    },
+    [setEdges]
+  )
 
   // Load existing animation if id is in URL
   useEffect(() => {
@@ -108,105 +187,103 @@ function BuilderContent() {
       setIsLoadingAnimation(false)
 
       if (res.success && res.data) {
-        setAnimationId(res.data.id || null)
-        setTitle(res.data.title)
-        setTopic(res.data.topic)
-        setDescription(res.data.description || "")
-        setNodes(res.data.nodes || [])
-        setLinks(res.data.links || [])
-        setSteps(res.data.steps || [])
+        const anim = res.data
+        setAnimationId(anim.id || null)
+        setTitle(anim.title)
+        setDiscipline(anim.discipline || "general")
+        setTopic(anim.topic)
+        setDescription(anim.description || "")
+        setDifficulty(anim.difficulty || "beginner")
+        setIsPublic(anim.is_public ?? false)
+        setSteps(anim.steps || [])
 
-        // Store snapshot of clean loaded state
-        setLastSavedSnapshot(
-          JSON.stringify({
-            title: res.data.title,
-            topic: res.data.topic,
-            description: res.data.description || "",
-            nodes: res.data.nodes || [],
-            links: res.data.links || [],
-            steps: res.data.steps || [],
-          })
-        )
+        const rf = universalToReactFlow(anim)
+        setNodes(rf.nodes)
+        setEdges(rf.edges)
       } else {
         setStatusMessage({ type: "error", text: "No se pudo cargar la animación solicitada." })
       }
     }
 
     fetchAnimation()
-  }, [editId])
+  }, [editId, setNodes, setEdges])
 
   // Reset to brand new animation
   const handleNewAnimation = () => {
     setAnimationId(null)
-    setTitle("Nueva Animación de Red")
-    setTopic("Acceso a la Red")
-    setDescription("Descripción pedagógica de la animación")
-    setNodes(INITIAL_NODES)
-    setLinks(INITIAL_LINKS)
-    setSteps(INITIAL_STEPS)
+    setTitle("Nueva Animación Educativa")
+    setDiscipline("general")
+    setTopic("Tema General")
+    setDescription("Descripción pedagógica...")
+    setDifficulty("beginner")
+    setIsPublic(false)
+    setSteps(INITIAL_UNIVERSAL_ANIMATION.steps)
+
+    const rf = universalToReactFlow(INITIAL_UNIVERSAL_ANIMATION)
+    setNodes(rf.nodes)
+    setEdges(rf.edges)
     setSelectedNodeId(null)
     setSelectedStepIndex(0)
     setIsPreviewOpen(false)
-    setLastSavedSnapshot(null)
     setStatusMessage({ type: "success", text: "Lienzo reiniciado para una nueva animación." })
     setTimeout(() => setStatusMessage(null), 3000)
     window.history.replaceState(null, "", "/builder")
   }
 
   // Node operations
-  const handleAddNode = (type: NodeType) => {
+  const handleAddNode = (type: UniversalNodeType, preset?: Partial<UniversalNode>) => {
     const id = `node-${Date.now()}`
-    const newNode: DynamicNode = {
+    const newNode: Node = {
       id,
       type,
-      label: `${type.toUpperCase()} ${nodes.length + 1}`,
-      x: 640,
-      y: 360,
+      position: { x: 500, y: 250 },
+      data: {
+        label: preset?.label || `Nodo ${nodes.length + 1}`,
+        content: preset?.content || "",
+        fill: preset?.fill || "var(--card)",
+        stroke: preset?.stroke || "var(--primary)",
+        shapeDetails: preset?.shapeDetails,
+        props: preset?.props,
+        nodeType: type,
+      },
     }
-    setNodes([...nodes, newNode])
+    setNodes((nds) => nds.concat(newNode))
     setSelectedNodeId(id)
   }
 
-  const handleUpdateNode = (updatedNode: DynamicNode) => {
-    setNodes(nodes.map((n) => (n.id === updatedNode.id ? updatedNode : n)))
+  const handleUpdateNode = (updatedNode: UniversalNode) => {
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === updatedNode.id) {
+          return {
+            ...n,
+            position: { x: updatedNode.x, y: updatedNode.y },
+            data: {
+              ...n.data,
+              label: updatedNode.label,
+              content: updatedNode.content,
+              fill: updatedNode.fill,
+              stroke: updatedNode.stroke,
+              shapeDetails: updatedNode.shapeDetails,
+              props: updatedNode.props,
+            },
+          }
+        }
+        return n
+      })
+    )
   }
 
   const handleDeleteNode = (nodeId: string) => {
-    setNodes(nodes.filter((n) => n.id !== nodeId))
-    setLinks(links.filter((l) => l.source !== nodeId && l.target !== nodeId))
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId))
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId))
     if (selectedNodeId === nodeId) setSelectedNodeId(null)
-  }
-
-  const handleUpdateNodePosition = (nodeId: string, x: number, y: number) => {
-    setNodes(nodes.map((n) => (n.id === nodeId ? { ...n, x, y } : n)))
-  }
-
-  // Link operations
-  const handleAddLink = (sourceId: string, targetId: string) => {
-    const exists = links.some(
-      (l) =>
-        (l.source === sourceId && l.target === targetId) ||
-        (l.source === targetId && l.target === sourceId)
-    )
-    if (exists) return
-
-    const newLink: DynamicLink = {
-      id: `link-${Date.now()}`,
-      source: sourceId,
-      target: targetId,
-      dashed: true,
-    }
-    setLinks([...links, newLink])
-  }
-
-  const handleDeleteLink = (linkId: string) => {
-    setLinks(links.filter((l) => l.id !== linkId))
   }
 
   // Step operations
   const handleAddStep = () => {
     const newStepIndex = steps.length + 1
-    const newStep: DynamicStep = {
+    const newStep: UniversalStep = {
       id: `step-${Date.now()}`,
       label: `${newStepIndex}. Nuevo Paso`,
       description: "Descripción de las acciones que ocurren en este paso.",
@@ -226,7 +303,7 @@ function BuilderContent() {
     }
   }
 
-  const handleUpdateStep = (updatedStep: DynamicStep) => {
+  const handleUpdateStep = (updatedStep: UniversalStep) => {
     const newSteps = [...steps]
     newSteps[selectedStepIndex] = updatedStep
     setSteps(newSteps)
@@ -249,42 +326,32 @@ function BuilderContent() {
     setSelectedStepIndex(toIndex)
   }
 
+  // Current compiled universal animation
+  const currentUniversalData = reactFlowToUniversal(nodes, edges, steps, {
+    id: animationId || undefined,
+    title,
+    description,
+    discipline,
+    topic,
+    difficulty,
+    is_public: isPublic,
+  })
+
   // Save Animation to Supabase
   const handleSave = async () => {
     setIsSaving(true)
     setStatusMessage(null)
 
-    const animationData: DynamicAnimationData = {
-      id: animationId || undefined,
-      title,
-      description,
-      topic,
-      nodes,
-      links,
-      steps,
-    }
-
-    const res = await saveAnimation(animationData)
+    const res = await saveAnimation(currentUniversalData)
     setIsSaving(false)
 
     if (res.success) {
       if (res.id) setAnimationId(res.id)
-      // Update saved snapshot
-      setLastSavedSnapshot(
-        JSON.stringify({
-          title,
-          topic,
-          description,
-          nodes,
-          links,
-          steps,
-        })
-      )
       setStatusMessage({
         type: "success",
-        text: animationId
-          ? "¡Animación actualizada con éxito!"
-          : "¡Animación guardada y publicada en Supabase!",
+        text: isPublic
+          ? "¡Animación guardada y publicada en el catálogo!"
+          : "¡Animación guardada como privada en tu panel!",
       })
       setTimeout(() => setStatusMessage(null), 4000)
     } else {
@@ -292,21 +359,23 @@ function BuilderContent() {
     }
   }
 
-  // Dirty state tracking
-  const currentSnapshot = JSON.stringify({
-    title,
-    topic,
-    description,
-    nodes,
-    links,
-    steps,
-  })
-  const isEditing = Boolean(animationId)
-  const hasUnsavedChanges = isEditing
-    ? lastSavedSnapshot === null || currentSnapshot !== lastSavedSnapshot
-    : true
+  // Selected node
+  const selectedRfNode = nodes.find((n) => n.id === selectedNodeId)
+  const selectedUniversalNode: UniversalNode | null = selectedRfNode
+    ? {
+        id: selectedRfNode.id,
+        type: (selectedRfNode.type as any) || "shape",
+        label: (selectedRfNode.data.label as string) || selectedRfNode.id,
+        x: Math.round(selectedRfNode.position.x),
+        y: Math.round(selectedRfNode.position.y),
+        content: selectedRfNode.data.content as string,
+        fill: selectedRfNode.data.fill as string,
+        stroke: selectedRfNode.data.stroke as string,
+        shapeDetails: selectedRfNode.data.shapeDetails as any,
+        props: selectedRfNode.data.props as any,
+      }
+    : null
 
-  const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null
   const selectedStep = steps[selectedStepIndex] || null
 
   if (isLoadingAnimation) {
@@ -314,7 +383,7 @@ function BuilderContent() {
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span>Cargando animación...</span>
+          <span>Cargando animación educativa...</span>
         </div>
       </div>
     )
@@ -322,8 +391,8 @@ function BuilderContent() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      {/* ── Sub Toolbar (Title & Category) ────────────────────────── */}
-      <div className="flex h-12 items-center justify-between border-b border-border/80 bg-card/70 px-4 shrink-0 shadow-xs">
+      {/* ── Sub Toolbar (Title, Discipline, Visibility) ─────────────── */}
+      <div className="flex h-12 items-center justify-between border-b border-border/80 bg-card/70 px-4 shrink-0 shadow-xs gap-3">
         <div className="flex items-center gap-3">
           {/* Title Editor */}
           <div className="flex items-center gap-2 rounded-lg border border-border bg-background/80 px-2.5 py-1 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30">
@@ -332,61 +401,43 @@ function BuilderContent() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-52 md:w-64 bg-transparent text-xs font-bold text-foreground focus:outline-none"
+              className="w-44 md:w-60 bg-transparent text-xs font-bold text-foreground focus:outline-none"
               placeholder="Título de la animación..."
               title="Haz clic para editar el título"
             />
           </div>
 
-          {/* Topic / Category Selector with Cancel Option */}
+          {/* Discipline Selector */}
           <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background/80 px-2.5 py-1">
-            <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            {!isCustomTopic ? (
-              <select
-                value={topic}
-                onChange={(e) => {
-                  if (e.target.value === "__custom__") {
-                    setIsCustomTopic(true)
-                  } else {
-                    setTopic(e.target.value)
-                  }
-                }}
-                className="bg-transparent text-xs font-semibold text-primary focus:outline-none cursor-pointer"
-                title="Selecciona la categoría o tema"
-              >
-                {TOPIC_SUGGESTIONS.map((t) => (
-                  <option key={t} value={t} className="bg-card text-foreground">
-                    {t}
-                  </option>
-                ))}
-                <option value="__custom__" className="bg-card text-muted-foreground">
-                  + Otra categoría...
+            <GraduationCap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <select
+              value={discipline}
+              onChange={(e) => setDiscipline(e.target.value as DisciplineType)}
+              className="bg-transparent text-xs font-semibold text-primary focus:outline-none cursor-pointer"
+              title="Selecciona la disciplina pedagógica"
+            >
+              {DISCIPLINES.map((d) => (
+                <option key={d.key} value={d.key} className="bg-card text-foreground">
+                  {d.label}
                 </option>
-              </select>
-            ) : (
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={topic}
-                  autoFocus
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="w-32 bg-transparent text-xs font-semibold text-primary focus:outline-none"
-                  placeholder="Nueva categoría..."
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTopic("Acceso a la Red")
-                    setIsCustomTopic(false)
-                  }}
-                  className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
-                  title="Volver a categorías predefinidas"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
+              ))}
+            </select>
           </div>
+
+          {/* Public / Private Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsPublic(!isPublic)}
+            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold border transition-all cursor-pointer ${
+              isPublic
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "border-border bg-background/80 text-muted-foreground hover:text-foreground"
+            }`}
+            title={isPublic ? "Animación pública visible en el catálogo" : "Animación privada/borrador"}
+          >
+            {isPublic ? <Globe className="size-3.5" /> : <Lock className="size-3.5" />}
+            <span className="hidden sm:inline">{isPublic ? "Pública" : "Privada"}</span>
+          </button>
         </div>
 
         {/* Action Controls */}
@@ -402,7 +453,7 @@ function BuilderContent() {
               ) : (
                 <AlertCircle className="h-3.5 w-3.5" />
               )}
-              <span>{statusMessage.text}</span>
+              <span className="hidden md:inline">{statusMessage.text}</span>
             </div>
           )}
 
@@ -415,9 +466,10 @@ function BuilderContent() {
             title="Crear una animación en blanco desde cero"
           >
             <FilePlus className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden sm:inline">Nueva Animación</span>
+            <span className="hidden sm:inline">Nueva</span>
           </Button>
 
+          {/* Preview Toggle */}
           <Button
             variant="outline"
             size="sm"
@@ -425,33 +477,23 @@ function BuilderContent() {
             className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
           >
             <Eye className="h-3.5 w-3.5" />
-            {isPreviewOpen ? "Editor" : "Previsualizar"}
+            {isPreviewOpen ? "Editor Studio" : "Previsualizar"}
           </Button>
 
           {/* Save / Update Button */}
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={isSaving || (isEditing && !hasUnsavedChanges)}
-            className={`gap-1.5 text-xs h-7 font-semibold transition-all ${
-              isEditing && !hasUnsavedChanges
-                ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
-                : "cursor-pointer"
-            }`}
-            title={
-              isEditing && !hasUnsavedChanges
-                ? "No hay cambios pendientes por guardar"
-                : isEditing
-                ? "Actualizar cambios en Supabase"
-                : "Guardar y publicar animación"
-            }
+            disabled={isSaving}
+            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
+            title="Guardar cambios en Supabase"
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            {isEditing ? (hasUnsavedChanges ? "Actualizar" : "Actualizado") : "Guardar y Publicar"}
+            <span>{animationId ? "Actualizar" : "Guardar"}</span>
           </Button>
         </div>
       </div>
@@ -461,49 +503,40 @@ function BuilderContent() {
         <div className="flex flex-1 overflow-hidden p-4">
           <div className="h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
             <AnimationPlayer steps={steps} title={title}>
-              <DynamicAnimationPlayer
-                animation={{
-                  id: animationId || undefined,
-                  title,
-                  description,
-                  topic,
-                  nodes,
-                  links,
-                  steps,
-                }}
-              />
+              <UniversalAnimationPlayer animation={currentUniversalData} />
             </AnimationPlayer>
           </div>
         </div>
       ) : (
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Main Top Area: Left (Assets), Center (Canvas), Right (Step Inspector) */}
+          {/* Main Top Area: Left (Assets), Center (React Flow Canvas), Right (Step Inspector) */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Left: Predefined Assets Palette */}
+            {/* Left: Multidisciplinary Assets Palette & Selected Node Inspector */}
             <AssetsSidebar
               onAddNode={handleAddNode}
-              selectedNode={selectedNode}
+              selectedNode={selectedUniversalNode}
               onUpdateNode={handleUpdateNode}
               onDeleteNode={handleDeleteNode}
             />
 
-            {/* Center: Interactive SVG Canvas (Zoom, Pan, Context Menu) */}
+            {/* Center: React Flow Canvas (Snapping, Magnetic Handles, Minimap) */}
             <Canvas
               nodes={nodes}
-              links={links}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
               selectedNodeId={selectedNodeId}
               onSelectNode={setSelectedNodeId}
-              onUpdateNodePosition={handleUpdateNodePosition}
-              onAddLink={handleAddLink}
-              onDeleteLink={handleDeleteLink}
               onDeleteNode={handleDeleteNode}
             />
 
-            {/* Right: Step Inspector & Action Form */}
+            {/* Right: Step Actions & Interactivity Inspector */}
             <StepInspector
               step={selectedStep}
               stepIndex={selectedStepIndex}
-              nodes={nodes}
+              nodes={currentUniversalData.nodes}
+              allSteps={steps}
               onUpdateStep={handleUpdateStep}
             />
           </div>
@@ -533,7 +566,9 @@ export default function BuilderPage() {
         </div>
       }
     >
-      <BuilderContent />
+      <ReactFlowProvider>
+        <BuilderContent />
+      </ReactFlowProvider>
     </Suspense>
   )
 }
