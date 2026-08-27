@@ -12,6 +12,7 @@ export type UniversalNodeType =
   | "shape" // Geometric shapes: circle, rect, triangle, diamond, polygon, star
   | "math" // LaTeX formula node: e.g. f(x) = \int ...
   | "text" // Markdown rich text card or label
+  | "image" // Image upload (Cloudflare R2, URL or data-URI)
   | "code" // Code snippet card
   | "network" // Backwards compatible network device (pc, switch, router, etc.)
   | "icon" // Lucide / visual symbol icon
@@ -52,6 +53,11 @@ export interface UniversalNode {
   opacity?: number
   rotation?: number
   scale?: number
+  zIndex?: number // Layer depth
+  textColor?: string
+  iconColor?: string
+  imageUrl?: string // Cloudflare R2 or web image URL / Data-URI
+  imageFit?: "contain" | "cover" | "fill"
   content?: string // Markdown text, LaTeX formula, or code snippet
   iconName?: string // Lucide icon name
   shapeDetails?: ShapeDetails
@@ -61,6 +67,7 @@ export interface UniversalNode {
 
 export type ConnectorType = "straight" | "bezier" | "orthogonal" | "arc"
 export type ConnectorDirected = "none" | "forward" | "backward" | "bidirectional"
+export type ArrowheadKind = "none" | "arrow" | "circle" | "diamond"
 
 export interface UniversalConnector {
   id: string
@@ -68,6 +75,8 @@ export interface UniversalConnector {
   targetId: string
   type?: ConnectorType
   directed?: ConnectorDirected
+  arrowStart?: ArrowheadKind
+  arrowEnd?: ArrowheadKind
   dashed?: boolean
   color?: string
   strokeWidth?: number
