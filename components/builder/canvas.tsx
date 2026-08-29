@@ -29,9 +29,10 @@ import {
   Copy,
   Trash2,
 } from "lucide-react"
-import type { UniversalNode, AnimationBackground } from "@/types/universal-animation"
+import type { UniversalNode, UniversalStep, AnimationBackground } from "@/types/universal-animation"
 import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
 import { StudioPlaybackBar } from "./studio-playback-bar"
+import { PacketParticleOverlay } from "./packet-particle-overlay"
 import type { PlaybackMode } from "@/lib/animations/studio-playback-controller"
 
 interface ContextMenuState {
@@ -43,6 +44,7 @@ interface ContextMenuState {
 interface CanvasProps {
   nodes: Node[]
   edges: Edge[]
+  currentStep?: UniversalStep
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
   onConnect: OnConnect
@@ -81,6 +83,7 @@ interface CanvasProps {
 export function Canvas({
   nodes,
   edges,
+  currentStep,
   onNodesChange,
   onEdgesChange,
   onConnect,
@@ -100,7 +103,13 @@ export function Canvas({
   onUpdateNodeZIndex,
 }: CanvasProps) {
   const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isDark = mounted && resolvedTheme === "dark"
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
 
   const bgStyle = getBackgroundInlineStyle(background, isDark ? "dark" : "light")
@@ -168,7 +177,17 @@ export function Canvas({
   }, [selectedNodeId, selectedEdgeId, onDeleteNode, onDeleteEdge])
 
   return (
-    <div className="relative flex-1 h-full w-full overflow-hidden bg-background">
+    <div
+      className="relative flex-1 h-full w-full overflow-hidden transition-colors duration-300"
+      style={bgStyle}
+    >
+      {patternBg && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{ backgroundImage: patternBg, backgroundSize: "24px 24px" }}
+        />
+      )}
+
       {/* ── Native Studio WYSIWYG Playback Bar (Top-Center Canvas) ──── */}
       {playbackProps && (
         <StudioPlaybackBar
@@ -228,11 +247,10 @@ export function Canvas({
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
         maxZoom={2.5}
-        className="h-full w-full transition-colors duration-300"
-        style={bgStyle}
+        className="h-full w-full !bg-transparent transition-colors duration-300"
       >
-        {/* If no custom pattern is selected, use React Flow's default dots, otherwise render custom pattern */}
-        {background?.pattern && background.pattern !== "none" ? null : (
+        {/* If no custom pattern is selected and no custom bg, use React Flow's default dots */}
+        {!background && (
           <Background
             variant={BackgroundVariant.Dots}
             gap={20}
@@ -240,6 +258,15 @@ export function Canvas({
             color={isDark ? "#334155" : "#CBD5E1"}
           />
         )}
+
+        {/* ── Live Animated Packet Particle Layer ──────────────────── */}
+        <PacketParticleOverlay
+          step={currentStep}
+          nodes={nodes}
+          edges={edges}
+          progress={playbackProps?.progress || 0}
+          isPlaying={Boolean(playbackProps && playbackProps.mode !== "idle")}
+        />
         <Controls
           showInteractive={false}
           className="!bg-card/90 !border-border !shadow-md !rounded-xl overflow-hidden"

@@ -42,6 +42,9 @@ import {
 
 interface AnimationContextValue {
   registerTimeline: (tl: gsap.core.Timeline) => void
+  currentStep: number
+  isPlaying: boolean
+  progress: number
 }
 
 export const AnimationContext = createContext<AnimationContextValue | null>(null)
@@ -329,7 +332,7 @@ export function AnimationPlayer({
   const activeStep = steps[currentStep]
 
   return (
-    <AnimationContext.Provider value={{ registerTimeline }}>
+    <AnimationContext.Provider value={{ registerTimeline, currentStep, isPlaying, progress }}>
       <div
         ref={playerRef}
         className={cn(

@@ -145,8 +145,10 @@ export function compileUniversalTimeline(
   C: UniversalPaletteColors
 ): gsap.core.Timeline {
   const tl = gsap.timeline({ paused: true })
-  const nodeMap = new Map<string, UniversalNode>(animation.nodes.map((n) => [n.id, n]))
-  const connectors = animation.connectors || (animation as any).links || []
+  const nodes = animation?.nodes || []
+  const steps = animation?.steps || []
+  const connectors = animation?.connectors || (animation as any)?.links || []
+  const nodeMap = new Map<string, UniversalNode>(nodes.map((n) => [n.id, n]))
   const connectorMap = new Map<string, UniversalConnector>()
 
   connectors.forEach((conn: any) => {
@@ -156,9 +158,35 @@ export function compileUniversalTimeline(
     connectorMap.set(conn.id, conn)
   })
 
+  const safeQ = (selector: string): any => {
+    try {
+      const res = q(selector)
+      if (!res) return null
+      if (Array.isArray(res) && res.length === 0) return null
+      if (res instanceof NodeList && res.length === 0) return null
+      return res
+    } catch {
+      return null
+    }
+  }
+
+  const safeSet = (selector: string, vars: gsap.TweenVars) => {
+    const targets = safeQ(selector)
+    if (targets) {
+      gsap.set(targets, vars)
+    }
+  }
+
+  const safeTo = (selector: string, vars: gsap.TweenVars, position?: gsap.Position) => {
+    const targets = safeQ(selector)
+    if (targets) {
+      tl.to(targets, vars, position)
+    }
+  }
+
   // 1. Initial State Setup
-  animation.nodes.forEach((node) => {
-    gsap.set(q(`#node-${node.id}`), {
+  nodes.forEach((node) => {
+    safeSet(`#node-${node.id}`, {
       x: node.x,
       y: node.y,
       scale: node.scale ?? 1,
@@ -169,19 +197,19 @@ export function compileUniversalTimeline(
     const strokeWidth = node.strokeWidth !== undefined ? node.strokeWidth : 1.5
     const hasStroke = strokeWidth > 0 && node.stroke !== "none" && node.stroke !== "transparent"
 
-    gsap.set(q(`#node-${node.id} .node-shape`), {
+    safeSet(`#node-${node.id} .node-shape`, {
       stroke: hasStroke ? node.stroke || C.idle : "none",
       strokeWidth: hasStroke ? strokeWidth : 0,
       fill: node.fill || "transparent",
       opacity: node.opacity ?? 1,
     })
 
-    gsap.set(q(`#node-${node.id} .ring`), {
+    safeSet(`#node-${node.id} .ring`, {
       scale: 1,
       opacity: 0,
     })
 
-    gsap.set(q(`#badge-${node.id}`), {
+    safeSet(`#badge-${node.id}`, {
       opacity: 0,
       y: 0,
     })
@@ -189,7 +217,7 @@ export function compileUniversalTimeline(
 
   // Initial connector states
   connectors.forEach((conn: any) => {
-    gsap.set(q(`#conn-${conn.id}`), {
+    safeSet(`#conn-${conn.id}`, {
       stroke: conn.color ? C[conn.color] || conn.color : C.idle,
       strokeWidth: conn.strokeWidth || 2,
       opacity: 1,
@@ -197,24 +225,24 @@ export function compileUniversalTimeline(
   })
 
   // Initial packet, tooltip and path draw states
-  animation.steps.forEach((step) => {
-    step.actions.forEach((action) => {
+  steps.forEach((step) => {
+    step.actions?.forEach((action) => {
       if (action.type === "packet" && action.fromId) {
         const fromNode = nodeMap.get(action.fromId)
         if (fromNode) {
-          gsap.set(q(`#pkt-${action.id}`), {
+          safeSet(`#pkt-${action.id}`, {
             x: fromNode.x,
             y: fromNode.y,
             opacity: 0,
           })
         }
       } else if (action.type === "tooltip") {
-        gsap.set(q(`#tooltip-${action.id}`), {
+        safeSet(`#tooltip-${action.id}`, {
           opacity: 0,
           y: 8,
         })
       } else if (action.type === "path_draw") {
-        gsap.set(q(`#draw-${action.id}`), {
+        safeSet(`#draw-${action.id}`, {
           strokeDashoffset: 1000,
           opacity: 0,
         })
@@ -254,7 +282,7 @@ export function compileUniversalTimeline(
               if (action.transform.rotation !== undefined)
                 targetVars.rotation = action.transform.rotation
 
-              tl.to(q(`#node-${action.targetId}`), targetVars, actionStart)
+              safeTo(`#node-${action.targetId}`, targetVars, actionStart)
             }
             break
           }
@@ -273,15 +301,15 @@ export function compileUniversalTimeline(
                 styleVars.strokeWidth = action.style.strokeWidth
               if (action.style.opacity !== undefined) styleVars.opacity = action.style.opacity
 
-              tl.to(q(`#node-${action.targetId} .node-shape`), styleVars, actionStart)
+              safeTo(`#node-${action.targetId} .node-shape`, styleVars, actionStart)
             }
             break
           }
 
           case "highlight": {
             if (action.targetId) {
-              tl.to(
-                q(`#node-${action.targetId} .node-shape`),
+              safeTo(
+                `#node-${action.targetId} .node-shape`,
                 {
                   stroke: colorVal,
                   strokeWidth: 3,
@@ -297,8 +325,8 @@ export function compileUniversalTimeline(
 
           case "pulse": {
             if (action.targetId) {
-              tl.to(
-                q(`#node-${action.targetId} .ring`),
+              safeTo(
+                `#node-${action.targetId} .ring`,
                 {
                   scale: 1.6,
                   opacity: 0.7,
@@ -316,8 +344,8 @@ export function compileUniversalTimeline(
 
           case "fade": {
             if (action.targetId) {
-              tl.to(
-                q(`#node-${action.targetId}`),
+              safeTo(
+                `#node-${action.targetId}`,
                 {
                   opacity: 0.25,
                   duration: actionDuration,
@@ -331,8 +359,8 @@ export function compileUniversalTimeline(
 
           case "badge": {
             if (action.targetId) {
-              tl.to(
-                q(`#badge-${action.targetId}`),
+              safeTo(
+                `#badge-${action.targetId}`,
                 {
                   opacity: 1,
                   y: -12,
@@ -346,8 +374,8 @@ export function compileUniversalTimeline(
           }
 
           case "tooltip": {
-            tl.to(
-              q(`#tooltip-${action.id}`),
+            safeTo(
+              `#tooltip-${action.id}`,
               {
                 opacity: 1,
                 y: 0,
@@ -377,8 +405,8 @@ export function compileUniversalTimeline(
               const hideDuration = 0.1
 
               // 1. Appear at source
-              tl.to(
-                q(`#pkt-${action.id}`),
+              safeTo(
+                `#pkt-${action.id}`,
                 {
                   x: fromNode.x,
                   y: fromNode.y,
@@ -392,8 +420,8 @@ export function compileUniversalTimeline(
               const stepInterval = moveDuration / (waypoints.length - 1)
               waypoints.forEach((pt, ptIdx) => {
                 if (ptIdx > 0) {
-                  tl.to(
-                    q(`#pkt-${action.id}`),
+                  safeTo(
+                    `#pkt-${action.id}`,
                     {
                       x: pt.x,
                       y: pt.y,
@@ -406,8 +434,8 @@ export function compileUniversalTimeline(
               })
 
               // 3. Hide at target
-              tl.to(
-                q(`#pkt-${action.id}`),
+              safeTo(
+                `#pkt-${action.id}`,
                 {
                   opacity: 0,
                   duration: hideDuration,
@@ -419,8 +447,8 @@ export function compileUniversalTimeline(
           }
 
           case "path_draw": {
-            tl.to(
-              q(`#draw-${action.id}`),
+            safeTo(
+              `#draw-${action.id}`,
               {
                 opacity: 1,
                 strokeDashoffset: 0,
@@ -434,8 +462,8 @@ export function compileUniversalTimeline(
 
           case "math_eval": {
             if (action.targetId) {
-              tl.to(
-                q(`#node-${action.targetId}`),
+              safeTo(
+                `#node-${action.targetId}`,
                 {
                   scale: 1.15,
                   duration: actionDuration * 0.4,
