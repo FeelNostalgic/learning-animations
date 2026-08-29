@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import {
   Sparkles,
   PenTool,
@@ -15,10 +16,7 @@ import {
   Eye,
   Search,
   Layers,
-  GraduationCap,
   Loader2,
-  CheckCircle2,
-  AlertCircle,
   AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -53,7 +51,6 @@ export function UserAnimationsDashboard({
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null)
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   // State for customized delete confirmation dialog
   const [animToDelete, setAnimToDelete] = useState<{ id: string; title: string } | null>(null)
@@ -101,20 +98,23 @@ export function UserAnimationsDashboard({
     setLoadingActionId(null)
 
     if (res.success) {
-      setStatusMessage({
-        type: "success",
-        text: nextPublic
-          ? "Animación publicada en el catálogo público"
-          : "Animación cambiada a modo privado",
-      })
-      setTimeout(() => setStatusMessage(null), 3000)
+      if (nextPublic) {
+        toast.success("Animación publicada", {
+          description: "Ahora es visible en el catálogo público de la comunidad.",
+        })
+      } else {
+        toast.info("Animación privada", {
+          description: "La animación ahora solo es visible para ti.",
+        })
+      }
     } else {
       // Revert on error
       setAnimations((prev) =>
         prev.map((a) => (a.id === id ? { ...a, is_public: currentPublic } : a))
       )
-      setStatusMessage({ type: "error", text: res.error || "Error al actualizar visibilidad" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.error("Error al actualizar visibilidad", {
+        description: res.error || "No se pudo cambiar el estado de publicación.",
+      })
     }
   }
 
@@ -125,12 +125,14 @@ export function UserAnimationsDashboard({
     setLoadingActionId(null)
 
     if (res.success && res.id) {
-      setStatusMessage({ type: "success", text: "¡Animación duplicada con éxito!" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.success("Animación duplicada", {
+        description: "Borrador clonado correctamente en tu cuenta.",
+      })
       router.push(`/builder?id=${res.id}`)
     } else {
-      setStatusMessage({ type: "error", text: res.error || "Error al duplicar animación" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.error("Error al duplicar animación", {
+        description: res.error || "No se pudo clonar la animación.",
+      })
     }
   }
 
@@ -138,7 +140,7 @@ export function UserAnimationsDashboard({
   const handleConfirmDelete = async () => {
     if (!animToDelete) return
 
-    const { id } = animToDelete
+    const { id, title } = animToDelete
     setLoadingActionId(`del-${id}`)
     setAnimToDelete(null)
 
@@ -147,34 +149,18 @@ export function UserAnimationsDashboard({
 
     if (res.success) {
       setAnimations((prev) => prev.filter((a) => a.id !== id))
-      setStatusMessage({ type: "success", text: "Animación eliminada correctamente" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.success("Animación eliminada", {
+        description: `"${title}" ha sido eliminada permanentemente.`,
+      })
     } else {
-      setStatusMessage({ type: "error", text: res.error || "Error al eliminar animación" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.error("Error al eliminar animación", {
+        description: res.error || "No se pudo eliminar la animación.",
+      })
     }
   }
 
   return (
     <div className="space-y-6 select-none">
-      {/* ── Status Toast Message ──────────────────────────────────── */}
-      {statusMessage && (
-        <div
-          className={`flex items-center gap-2 rounded-xl p-3 text-xs font-semibold shadow-md ${
-            statusMessage.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-              : "bg-destructive/10 border border-destructive/30 text-destructive"
-          }`}
-        >
-          {statusMessage.type === "success" ? (
-            <CheckCircle2 className="size-4 shrink-0" />
-          ) : (
-            <AlertCircle className="size-4 shrink-0" />
-          )}
-          <span>{statusMessage.text}</span>
-        </div>
-      )}
-
       {/* ── Search & Filter Toolbar ───────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         {/* Search */}

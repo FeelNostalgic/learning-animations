@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { toast } from "sonner"
 import { MarkdownView } from "@/components/ui/markdown-view"
 import {
   Copy,
@@ -120,9 +121,12 @@ export function KatexCheatSheet() {
   const [customMath, setCustomMath] = useState("\\int_0^{\\infty} x^2 e^{-x}\\,dx = 2")
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
-  const handleCopy = (code: string) => {
+  const handleCopy = (code: string, title?: string) => {
     navigator.clipboard.writeText(code)
     setCopiedCode(code)
+    toast.success("Fórmula KaTeX copiada", {
+      description: title ? `"${title}" copiada al portapapeles.` : `LaTeX: ${code}`,
+    })
     setTimeout(() => setCopiedCode(null), 2000)
   }
 

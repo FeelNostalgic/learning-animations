@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster position="top-right" />
         </ThemeProvider>
       </body>
     </html>

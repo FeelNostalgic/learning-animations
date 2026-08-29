@@ -22,6 +22,7 @@ import {
   Code2,
 } from "lucide-react"
 import { MarkdownView } from "@/components/ui/markdown-view"
+import { toast } from "sonner"
 
 interface ComponentSpec {
   id: string
@@ -45,9 +46,12 @@ export function ComponentCatalog() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [activeJsonId, setActiveJsonId] = useState<string | null>(null)
 
-  const handleCopy = (id: string, obj: any) => {
+  const handleCopy = (id: string, obj: any, name?: string) => {
     navigator.clipboard.writeText(JSON.stringify(obj, null, 2))
     setCopiedId(id)
+    toast.success("JSON copiado al portapapeles", {
+      description: name ? `Snippet del componente "${name}" copiado.` : "Snippet JSON copiado.",
+    })
     setTimeout(() => setCopiedId(null), 2000)
   }
 

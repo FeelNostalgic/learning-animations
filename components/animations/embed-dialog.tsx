@@ -1,8 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import { Code, Copy, Check, X, ExternalLink } from "lucide-react"
+import { Code, Copy } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface EmbedDialogProps {
   slugOrId: string
@@ -15,11 +23,6 @@ export function EmbedDialog({
   isOpen,
   onClose,
 }: EmbedDialogProps) {
-  const [copiedSnippet, setCopiedSnippet] = useState(false)
-  const [copiedUrl, setCopiedUrl] = useState(false)
-
-  if (!isOpen) return null
-
   const origin = typeof window !== "undefined" ? window.location.origin : ""
   const embedUrl = `${origin}/embed/${slugOrId}`
   const iframeSnippet = `<iframe src="${embedUrl}" width="100%" height="520" frameborder="0" allowfullscreen></iframe>`
@@ -27,62 +30,51 @@ export function EmbedDialog({
   const handleCopySnippet = async () => {
     try {
       await navigator.clipboard.writeText(iframeSnippet)
-      setCopiedSnippet(true)
-      setTimeout(() => setCopiedSnippet(false), 2500)
+      toast.success("Código iFrame copiado", {
+        description: "Pega este snippet en tu LMS, blog o sitio web.",
+      })
     } catch {
-      // Fallback
+      toast.error("No se pudo copiar el código")
     }
   }
 
   const handleCopyUrl = async () => {
     try {
       await navigator.clipboard.writeText(embedUrl)
-      setCopiedUrl(true)
-      setTimeout(() => setCopiedUrl(false), 2500)
+      toast.success("Enlace de incrustación copiado", {
+        description: "Enlace directo copiado al portapapeles.",
+      })
     } catch {
-      // Fallback
+      toast.error("No se pudo copiar el enlace")
     }
   }
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl space-y-4"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border/80 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Code className="h-4 w-4" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md select-none">
+        <DialogHeader>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Code className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Incrustar Animación</h3>
-              <p className="text-[11px] text-muted-foreground">
-                Copia el código iframe o el enlace directo para incrustar esta animación.
-              </p>
+              <DialogTitle>Incrustar Animación</DialogTitle>
+              <DialogDescription>
+                Copia el código iframe o el enlace directo para incrustar esta animación interactiva.
+              </DialogDescription>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Snippet Code Box */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 pt-2">
           <div className="flex items-center justify-between">
             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Código HTML (iFrame)
             </label>
-            <span className="text-[10px] text-muted-foreground">Arrastra o copia</span>
+            <span className="text-[10px] text-muted-foreground font-mono">100% Responsive</span>
           </div>
-          <div className="relative rounded-xl border border-border bg-background p-3 font-mono text-[11px] text-foreground break-all select-text cursor-text">
+          <div className="relative rounded-xl border border-border bg-background/80 p-3 font-mono text-[11px] text-foreground break-all select-text cursor-text shadow-xs">
             {iframeSnippet}
           </div>
         </div>
@@ -92,25 +84,23 @@ export function EmbedDialog({
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Enlace Directo
           </label>
-          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-background/50 px-2.5 py-1.5 font-mono text-[10px] text-foreground">
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-background/50 px-3 py-2 font-mono text-[10px] text-foreground">
             <span className="truncate flex-1 select-text cursor-text">{embedUrl}</span>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCopyUrl}
-              className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-accent transition-colors shrink-0 cursor-pointer"
-              title="Copiar enlace"
+              className="h-7 px-2 text-muted-foreground hover:text-primary cursor-pointer"
+              title="Copiar enlace directo"
             >
-              {copiedUrl ? (
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </button>
+              <Copy className="size-3.5" />
+            </Button>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/80">
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 text-xs cursor-pointer">
+        <DialogFooter className="pt-2">
+          <Button variant="outline" size="sm" onClick={onClose} className="h-8 text-xs cursor-pointer">
             Cerrar
           </Button>
           <Button
@@ -118,20 +108,11 @@ export function EmbedDialog({
             onClick={handleCopySnippet}
             className="h-8 gap-1.5 text-xs font-semibold cursor-pointer"
           >
-            {copiedSnippet ? (
-              <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span>¡Copiado!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" />
-                <span>Copiar iFrame</span>
-              </>
-            )}
+            <Copy className="size-3.5" />
+            <span>Copiar iFrame</span>
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
