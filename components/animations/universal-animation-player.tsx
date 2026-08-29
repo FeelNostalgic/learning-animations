@@ -4,24 +4,15 @@ import { useEffect, useRef, useState, useMemo } from "react"
 import gsap from "gsap"
 import { useTheme } from "next-themes"
 import { useAnimationContext } from "./animation-player"
-import {
-  NETWORK_DEVICE_STYLE,
-  PcGlyph,
-  SwitchGlyph,
-  RouterGlyph,
-  ServerGlyph,
-} from "./network-device-icons"
-import { CloudGlyph } from "./network-visual-primitives"
-import { MarkdownView } from "@/components/ui/markdown-view"
 import { InteractionOverlay } from "./interaction-overlay"
 import { InteractionRuntime } from "@/lib/animations/interaction-runtime"
 import {
   compileUniversalTimeline,
   calculateConnectorPath,
-  sampleConnectorPoints,
   type UniversalPaletteColors,
 } from "@/lib/animations/universal-compiler"
 import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
+import { UniversalNodeView } from "@/components/animations/visual/universal-node-view"
 import type {
   UniversalAnimationData,
   UniversalNode,
@@ -80,7 +71,7 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
     return new Map(animation.nodes.map((n) => [n.id, n]))
   }, [animation.nodes])
 
-  // Separate container nodes (rendered in background layer) from interactive foreground nodes
+  // Separate container nodes from foreground nodes
   const containerNodes = useMemo(() => {
     return animation.nodes.filter((n) => n.type === "container")
   }, [animation.nodes])
@@ -91,248 +82,40 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
       .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
   }, [animation.nodes])
 
-  // Extract all actions from all steps
   const allActions = useMemo(() => {
     return animation.steps.flatMap((s) => s.actions)
   }, [animation.steps])
 
-  // Connectors list (supports both connectors and legacy links)
   const connectors: UniversalConnector[] = useMemo(() => {
     if (animation.connectors && animation.connectors.length > 0) {
       return animation.connectors
     }
-    const legacyLinks = (animation as any).links || []
-    return legacyLinks.map((l: any) => ({
-      id: l.id,
-      sourceId: l.source,
-      targetId: l.target,
-      type: "bezier",
-      dashed: l.dashed,
-    }))
-  }, [animation.connectors, (animation as any).links])
+    if (animation.links && animation.links.length > 0) {
+      return animation.links.map((link) => ({
+        id: link.id,
+        sourceId: link.source,
+        targetId: link.target,
+        label: link.label,
+        type: (link.style as any) === "curved" ? "bezier" : "straight",
+        directed: link.animated ? "forward" : "none",
+        color: link.color,
+      }))
+    }
+    return []
+  }, [animation.connectors, animation.links])
 
-  // GSAP Context & Timeline Compilation
+  // Compile GSAP timeline using compiled universal engine
   useEffect(() => {
-    if (!svgRef.current) return
+    const svg = svgRef.current
+    if (!svg) return
 
-    const ctx = gsap.context(() => {
-      const q = gsap.utils.selector(svgRef.current)
-      const tl = compileUniversalTimeline(animation, q, C)
-      registerTimeline(tl)
-    }, svgRef)
+    const tl = compileUniversalTimeline(svg, animation.steps, animation.nodes, connectors, C)
+    registerTimeline(tl)
 
     return () => {
-      ctx.revert()
+      tl.kill()
     }
-  }, [animation, C, registerTimeline])
-
-  // Render SVG node shape based on node type
-  const renderNodeShape = (node: UniversalNode) => {
-    const fill = node.fill || (resolvedTheme === "light" ? "#F8FAFC" : "#0F172A")
-    const stroke = node.stroke || C.idle
-    const strokeWidth = node.strokeWidth !== undefined ? node.strokeWidth : 1.5
-    const hasStroke = strokeWidth > 0 && stroke !== "none" && stroke !== "transparent"
-    const opacity = node.opacity !== undefined ? node.opacity : 1
-
-    switch (node.type) {
-      case "shape": {
-        const shapeType = node.shapeDetails?.shapeType || "circle"
-        const r = node.shapeDetails?.radius || (node.width ? node.width / 2 : 36)
-        const w = node.width || node.shapeDetails?.width || 80
-        const h = node.height || node.shapeDetails?.height || 50
-
-        if (shapeType === "circle") {
-          return (
-            <circle
-              r={r}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-              opacity={opacity}
-            />
-          )
-        }
-
-        if (shapeType === "rounded_rect" || shapeType === "rect" || shapeType === "pill") {
-          const rx = shapeType === "pill" ? h / 2 : node.shapeDetails?.rx || 8
-          return (
-            <rect
-              x={-w / 2}
-              y={-h / 2}
-              width={w}
-              height={h}
-              rx={rx}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-              opacity={opacity}
-            />
-          )
-        }
-
-        if (shapeType === "diamond") {
-          return (
-            <polygon
-              points={`0,${-r} ${r},0 0,${r} ${-r},0`}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-              opacity={opacity}
-            />
-          )
-        }
-
-        if (shapeType === "triangle") {
-          return (
-            <polygon
-              points={`0,${-r} ${r},${r} ${-r},${r}`}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-              opacity={opacity}
-            />
-          )
-        }
-
-        return (
-          <circle
-            r={r}
-            className="node-shape transition-colors duration-200"
-            fill={fill}
-            stroke={hasStroke ? stroke : "none"}
-            strokeWidth={hasStroke ? strokeWidth : 0}
-            opacity={opacity}
-          />
-        )
-      }
-
-      case "image": {
-        const w = node.width || 120
-        const h = node.height || 120
-        const imgUrl = node.imageUrl || node.content || ""
-        return (
-          <g opacity={opacity}>
-            <rect
-              x={-w / 2}
-              y={-h / 2}
-              width={w}
-              height={h}
-              rx={12}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-            />
-            {imgUrl && (
-              <image
-                href={imgUrl}
-                xlinkHref={imgUrl}
-                x={-w / 2 + 3}
-                y={-h / 2 + 3}
-                width={w - 6}
-                height={h - 6}
-                preserveAspectRatio={
-                  node.imageFit === "cover"
-                    ? "xMidYMid slice"
-                    : node.imageFit === "fill"
-                    ? "none"
-                    : "xMidYMid meet"
-                }
-              />
-            )}
-          </g>
-        )
-      }
-
-      case "math": {
-        const w = node.width || 200
-        const h = node.height || 70
-        return (
-          <g opacity={opacity}>
-            <rect
-              x={-w / 2}
-              y={-h / 2}
-              width={w}
-              height={h}
-              rx={10}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-            />
-            <foreignObject
-              x={-w / 2 + 6}
-              y={-h / 2 + 4}
-              width={w - 12}
-              height={h - 8}
-              className="overflow-visible"
-            >
-              <div className="flex h-full w-full items-center justify-center text-center overflow-x-auto text-xs font-semibold text-foreground">
-                <MarkdownView inline content={`$${node.content || node.label}$`} />
-              </div>
-            </foreignObject>
-          </g>
-        )
-      }
-
-      case "text": {
-        const w = node.width || 220
-        const h = node.height || 100
-        return (
-          <g opacity={opacity}>
-            <rect
-              x={-w / 2}
-              y={-h / 2}
-              width={w}
-              height={h}
-              rx={10}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-            />
-            <foreignObject
-              x={-w / 2 + 8}
-              y={-h / 2 + 8}
-              width={w - 16}
-              height={h - 16}
-              className="overflow-hidden"
-            >
-              <div className="h-full w-full text-xs text-foreground leading-relaxed overflow-y-auto">
-                <MarkdownView content={node.content || node.label} />
-              </div>
-            </foreignObject>
-          </g>
-        )
-      }
-
-      case "network":
-      default: {
-        const netType = node.props?.networkType || "pc"
-        const r = node.width ? node.width / 2 : NETWORK_DEVICE_STYLE.radius
-        return (
-          <g opacity={opacity}>
-            <circle
-              r={r}
-              className="node-shape transition-colors duration-200"
-              fill={fill}
-              stroke={hasStroke ? stroke : "none"}
-              strokeWidth={hasStroke ? strokeWidth : 0}
-            />
-            {netType === "pc" && <PcGlyph stroke={C.fg} />}
-            {netType === "switch" && <SwitchGlyph stroke={C.fg} />}
-            {netType === "router" && <RouterGlyph stroke={C.fg} />}
-            {netType === "server" && <ServerGlyph stroke={C.fg} />}
-            {netType === "cloud" && <CloudGlyph fill={C.fg} />}
-          </g>
-        )
-      }
-    }
-  }
+  }, [animation, connectors, registerTimeline, C])
 
   const isLight = resolvedTheme === "light"
   const bgStyle = getBackgroundInlineStyle(animation.background, isLight ? "light" : "dark")
@@ -343,7 +126,6 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
       className={`relative h-full w-full select-none overflow-hidden transition-colors duration-300 ${className || ""}`}
       style={bgStyle}
     >
-      {/* Optional decorative grid / dot pattern overlay */}
       {patternBg && (
         <div
           className="pointer-events-none absolute inset-0 z-0"
@@ -380,89 +162,75 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
           </marker>
         </defs>
 
-        {/* ── 1. Background Containers Layer (Translucent & Non-Blocking) ── */}
-        <g id="containers-layer" className="pointer-events-none">
-          {containerNodes.map((cont) => {
-            const w = cont.width || 320
-            const h = cont.height || 200
+        {/* ── Background Subsystem Containers ────────────────────────── */}
+        <g id="layer-containers">
+          {containerNodes.map((node) => {
+            const w = node.width || 320
+            const h = node.height || 200
             return (
-              <g key={cont.id} transform={`translate(${cont.x}, ${cont.y})`} opacity={cont.opacity ?? 1}>
-                <rect
-                  x={-w / 2}
-                  y={-h / 2}
-                  width={w}
-                  height={h}
-                  rx={16}
-                  fill="rgba(100, 116, 139, 0.07)"
-                  stroke={cont.stroke || C.idle}
-                  strokeWidth={cont.strokeWidth || 1.5}
-                  strokeDasharray="6 6"
-                />
-                <text
-                  x={-w / 2 + 14}
-                  y={-h / 2 + 22}
-                  fill={C.subText}
-                  fontSize="11"
-                  fontWeight="bold"
-                  className="font-mono uppercase tracking-wider"
-                >
-                  {cont.label}
-                </text>
-              </g>
+              <foreignObject
+                key={node.id}
+                id={`node-${node.id}`}
+                x={node.x}
+                y={node.y}
+                width={w}
+                height={h}
+                className="overflow-visible pointer-events-none"
+              >
+                <UniversalNodeView node={node} />
+              </foreignObject>
             )
           })}
         </g>
 
-        {/* ── 2. Connectors Layer ─────────────────────────────────────── */}
-        <g id="connectors-layer">
+        {/* ── Connectors & Arrow Paths ─────────────────────────────── */}
+        <g id="layer-connectors">
           {connectors.map((conn) => {
             const src = nodeMap.get(conn.sourceId)
-            const dst = nodeMap.get(conn.targetId)
-            if (!src || !dst) return null
+            const tgt = nodeMap.get(conn.targetId)
+            if (!src || !tgt) return null
 
-            const pathData = calculateConnectorPath(src, dst, conn.type || "bezier")
-            const hasForwardArrow =
-              conn.directed === "forward" || conn.directed === "bidirectional"
-            const hasBackwardArrow =
-              conn.directed === "backward" || conn.directed === "bidirectional"
+            const { d, midX, midY } = calculateConnectorPath(src, tgt, conn.type || "bezier")
+            const strokeColor = conn.color || C.idle
+            const strokeWidth = conn.strokeWidth || 2
 
-            const labelPos = (conn as any).labelPosition !== undefined ? (conn as any).labelPosition : 0.5
-            const waypoints = sampleConnectorPoints(src, dst, conn.type || "bezier", 20)
-            const waypointIdx = Math.min(waypoints.length - 1, Math.max(0, Math.round(labelPos * (waypoints.length - 1))))
-            const labelPt = waypoints[waypointIdx] || { x: (src.x + dst.x) / 2, y: (src.y + dst.y) / 2 }
+            let markerEnd = undefined
+            let markerStart = undefined
+            if (conn.directed === "forward" || conn.directed === "bidirectional") {
+              markerEnd = "url(#arrowhead-forward)"
+            }
+            if (conn.directed === "backward" || conn.directed === "bidirectional") {
+              markerStart = "url(#arrowhead-backward)"
+            }
 
             return (
-              <g key={conn.id}>
+              <g key={conn.id} id={`connector-${conn.id}`} className="transition-opacity duration-300">
                 <path
-                  id={`conn-${conn.id}`}
-                  d={pathData}
+                  id={`connector-path-${conn.id}`}
+                  d={d}
                   fill="none"
-                  stroke={conn.color ? C[conn.color] || conn.color : C.idle}
-                  strokeWidth={conn.strokeWidth || 2}
-                  strokeDasharray={conn.dashed ? "6 6" : undefined}
-                  markerEnd={hasForwardArrow ? "url(#arrowhead-forward)" : undefined}
-                  markerStart={hasBackwardArrow ? "url(#arrowhead-backward)" : undefined}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={conn.dashed ? "6 4" : undefined}
+                  markerEnd={markerEnd}
+                  markerStart={markerStart}
                   className="transition-colors duration-200"
                 />
                 {conn.label && (
-                  <g transform={`translate(${labelPt.x}, ${labelPt.y})`}>
+                  <g id={`connector-label-${conn.id}`} transform={`translate(${midX}, ${midY})`}>
                     <rect
-                      x={-(conn.label.length * 3.5 + 8)}
-                      y={-14}
-                      width={conn.label.length * 7 + 16}
-                      height={18}
-                      rx={4}
-                      fill={resolvedTheme === "light" ? "rgba(255, 255, 255, 0.85)" : "rgba(15, 23, 42, 0.85)"}
-                      stroke={C.muted}
+                      x={-40}
+                      y={-12}
+                      width={80}
+                      height={20}
+                      rx={6}
+                      className="fill-card/90 stroke-border/60"
                       strokeWidth={1}
                     />
                     <text
-                      y={-2}
-                      fill={C.fg}
-                      fontSize="10"
-                      fontFamily="monospace"
                       textAnchor="middle"
-                      className="select-none font-semibold"
+                      dominantBaseline="central"
+                      className="fill-foreground text-[10px] font-bold select-none pointer-events-none"
                     >
                       {conn.label}
                     </text>
@@ -473,110 +241,57 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
           })}
         </g>
 
-        {/* ── 3. Foreground Nodes Layer (Depth-Sorted by zIndex) ─────── */}
-        <g id="nodes-layer">
+        {/* ── Foreground Nodes (100% Identical Shared Primitives) ──── */}
+        <g id="layer-nodes">
           {foregroundNodes.map((node) => {
-            const hasLabel = node.type !== "text" && node.type !== "math" && node.type !== "image"
+            const w = node.width || (node.type === "shape" && node.shapeDetails?.shapeType === "circle" ? 80 : 100)
+            const h = node.height || (node.type === "shape" && node.shapeDetails?.shapeType === "circle" ? 80 : 60)
+
             return (
-              <g
+              <foreignObject
                 key={node.id}
                 id={`node-${node.id}`}
-                className="cursor-pointer"
+                x={node.x}
+                y={node.y}
+                width={w}
+                height={h}
+                className="overflow-visible cursor-pointer"
                 onClick={() => setSelectedNode(node)}
-                tabIndex={0}
-                role="button"
-                aria-label={node.ariaLabel || `${node.label} (${node.type})`}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    setSelectedNode(node)
-                  }
-                }}
               >
-                {/* Pulse Ring */}
-                <circle
-                  className="ring pointer-events-none"
-                  r={node.shapeDetails?.radius ? node.shapeDetails.radius * 1.3 : 42}
-                  fill="none"
-                  stroke={C.active}
-                  strokeWidth={2}
-                  opacity={0}
-                />
-
-                {/* Node Shape */}
-                {renderNodeShape(node)}
-
-                {/* Node Label */}
-                {hasLabel && (
-                  <text
-                    y={node.height ? node.height / 2 + 18 : 46}
-                    fill={C.fg}
-                    fontSize="12"
-                    fontWeight="600"
-                    textAnchor="middle"
-                    className="select-none font-sans pointer-events-none"
-                  >
-                    {node.label}
-                  </text>
-                )}
-
-                {/* Node Badge */}
-                <g id={`badge-${node.id}`} className="pointer-events-none" opacity={0}>
-                  <rect
-                    x="-35"
-                    y="-50"
-                    width="70"
-                    height="20"
-                    rx="10"
-                    fill={C.success}
-                    stroke={C.fg}
-                    strokeWidth={1}
-                  />
-                  <text
-                    y="-36"
-                    fill={C.successText}
-                    fontSize="10"
-                    fontFamily="monospace"
-                    fontWeight="bold"
-                    textAnchor="middle"
-                  >
-                    OK
-                  </text>
-                </g>
-              </g>
+                <UniversalNodeView node={node} />
+              </foreignObject>
             )
           })}
         </g>
 
-        {/* ── 4. Animated Particles / Packets Layer ──────────────────── */}
-        <g id="packets-layer" className="pointer-events-none">
-          {allActions.map((act) => {
-            if (act.type !== "packet") return null
-            const colorVal = act.color ? C[act.color] || act.color : C.warn
-            return (
-              <g key={act.id} id={`pkt-${act.id}`} opacity={0}>
-                <circle r={14} fill={colorVal} stroke={C.fg} strokeWidth={1.5} opacity={0.9} />
-                <text
-                  y={4}
-                  fill={C.warnText}
-                  fontSize="9"
-                  fontFamily="monospace"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  {act.text || "DATA"}
-                </text>
+        {/* ── Dynamic Action Layers (Packets, Tooltips, Pulse Waves) ─ */}
+        <g id="layer-packets">
+          {allActions
+            .filter((a) => a.type === "packet")
+            .map((act) => (
+              <g
+                key={act.id}
+                id={`action-${act.id}`}
+                className="pointer-events-none opacity-0 transition-opacity"
+              >
+                <circle r={7} fill={act.color || C.active} className="drop-shadow-md" />
+                {act.text && (
+                  <text
+                    y={-12}
+                    textAnchor="middle"
+                    fill={C.fg}
+                    className="text-[10px] font-extrabold"
+                  >
+                    {act.text}
+                  </text>
+                )}
               </g>
-            )
-          })}
+            ))}
         </g>
       </svg>
 
-      {/* ── 5. Interactive Overlays (Sliders, Quizzes, Decision Trees) ── */}
-      <InteractionOverlay
-        steps={animation.steps}
-        runtime={runtimeRef.current}
-        onTriggerAction={() => {}}
-      />
+      {/* ── Native Interaction HUD & Quiz Overlay ──────────────────── */}
+      <InteractionOverlay runtimeRef={runtimeRef} />
     </div>
   )
 }

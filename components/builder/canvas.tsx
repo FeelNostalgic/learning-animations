@@ -31,6 +31,8 @@ import {
 } from "lucide-react"
 import type { UniversalNode, AnimationBackground } from "@/types/universal-animation"
 import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
+import { StudioPlaybackBar } from "./studio-playback-bar"
+import type { PlaybackMode } from "@/lib/animations/studio-playback-controller"
 
 interface ContextMenuState {
   x: number
@@ -49,6 +51,23 @@ interface CanvasProps {
   selectedNode: UniversalNode | null
   selectedEdge: Edge | null
   background?: AnimationBackground
+  playbackProps?: {
+    currentStepIndex: number
+    totalSteps: number
+    stepLabel: string
+    mode: PlaybackMode
+    speed: number
+    progress: number
+    actionCount: number
+    onPlayStep: () => void
+    onPlayAll: () => void
+    onPause: () => void
+    onResume: () => void
+    onStop: () => void
+    onNextStep: () => void
+    onPrevStep: () => void
+    onSpeedChange: (speed: number) => void
+  }
   onSelectNode: (nodeId: string | null) => void
   onSelectEdge: (edgeId: string | null) => void
   onUpdateNode?: (node: UniversalNode) => void
@@ -70,6 +89,7 @@ export function Canvas({
   selectedNode,
   selectedEdge,
   background,
+  playbackProps,
   onSelectNode,
   onSelectEdge,
   onUpdateNode,
@@ -149,6 +169,27 @@ export function Canvas({
 
   return (
     <div className="relative flex-1 h-full w-full overflow-hidden bg-background">
+      {/* ── Native Studio WYSIWYG Playback Bar (Top-Center Canvas) ──── */}
+      {playbackProps && (
+        <StudioPlaybackBar
+          currentStepIndex={playbackProps.currentStepIndex}
+          totalSteps={playbackProps.totalSteps}
+          stepLabel={playbackProps.stepLabel}
+          mode={playbackProps.mode}
+          speed={playbackProps.speed}
+          progress={playbackProps.progress}
+          actionCount={playbackProps.actionCount}
+          onPlayStep={playbackProps.onPlayStep}
+          onPlayAll={playbackProps.onPlayAll}
+          onPause={playbackProps.onPause}
+          onResume={playbackProps.onResume}
+          onStop={playbackProps.onStop}
+          onNextStep={playbackProps.onNextStep}
+          onPrevStep={playbackProps.onPrevStep}
+          onSpeedChange={playbackProps.onSpeedChange}
+        />
+      )}
+
       {/* ── Floating Property Panel (Top-Left Canvas) ───────────── */}
       {(selectedNode || selectedEdge) && (
         <FloatingPropertyPanel
@@ -170,6 +211,9 @@ export function Canvas({
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        nodesDraggable={playbackProps ? playbackProps.mode === "idle" : true}
+        nodesConnectable={playbackProps ? playbackProps.mode === "idle" : true}
+        elementsSelectable={playbackProps ? playbackProps.mode === "idle" : true}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
