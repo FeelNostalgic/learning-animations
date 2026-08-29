@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "ci:sync": "node scripts/ci-sync.mjs"
+    "ci:sync": "node scripts/ci-sync.mjs",
+    "ship": "node scripts/agent-ship.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",

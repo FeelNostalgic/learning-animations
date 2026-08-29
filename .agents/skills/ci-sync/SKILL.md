@@ -1,45 +1,31 @@
 ---
 name: ci-sync
 description: >
-  Monitor GitHub Actions CI status, actively wait for in-progress runs, auto-pull on green build success, and diagnose failures on red.
-  Trigger: When asked to check CI status, sync after CI, or monitor GitHub Actions.
+  Complete Git Ship & CI Sync: stages, commits, pushes, actively monitors GitHub Actions, and auto-pulls on green success.
+  Trigger: When asked to ship changes, check CI status, sync after CI, or automate git workflow.
 license: MIT
 metadata:
-  version: "1.1"
+  version: "1.2"
 ---
 
-# CI Monitor & Auto-Sync Skill
+# Git Ship & CI Auto-Sync Skill
 
 ## Purpose
-Monitors the latest GitHub Actions workflow run for this repository using the official GitHub CLI (`gh`). If the workflow is in progress, it actively waits and polls until completion. If it finishes successfully in green, it automatically executes `git pull`. If it fails in red, it extracts and diagnoses the failed logs without pulling broken code.
+Automates the full developer release lifecycle:
+1. `git add .`
+2. `git commit -m "<conventional-commit-message>"`
+3. `git push origin <branch>`
+4. Live CI monitoring with active waiting/polling
+5. Automatic `git pull` when CI passes in green (bringing back the automated SemVer version bump and merge tags).
 
-## Usage
+## Commands
 
-### 1. Direct NPM Script
+### 1. Complete End-to-End Automation
+```bash
+npm run ship -- "feat(scope): descripción del cambio"
+```
+
+### 2. Standalone CI Check & Pull
 ```bash
 npm run ci:sync
 ```
-
-### 2. GitHub CLI Commands
-```bash
-# List recent runs and their conclusion
-gh run list --limit 3
-
-# Watch a run live in the terminal
-gh run watch
-
-# Inspect failed job logs
-gh run view <run-id> --log-failed
-```
-
-### 3. Agent Decision Protocol
-1. Query the latest workflow run for the active branch (`dev` / `main`).
-2. If `status === "in_progress"` or `"queued"`:
-   - Actively poll every 5s with progress reporting until completion.
-3. If `conclusion === "success"`:
-   - Check `git status`. If working tree is clean, execute `git pull origin <branch>`.
-   - Report the updated version and commit log.
-4. If `conclusion === "failure"`:
-   - Run `gh run view <run-id> --log-failed`.
-   - Extract the failing step, job name, and error snippet.
-   - Report the root cause clearly without pulling broken code.
