@@ -15,6 +15,7 @@ import {
   Layers,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 import type { UniversalActionType } from "@/types/universal-animation"
 
 export interface ActionDefinition {
@@ -93,6 +94,9 @@ export function ActionLoopCard({ action }: ActionLoopCardProps) {
   const copyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(action.jsonExample, null, 2))
     setCopied(true)
+    toast.success("JSON copiado al portapapeles", {
+      description: `Estructura de acción "${action.title}" lista para pegar en el Studio.`,
+    })
     setTimeout(() => setCopied(false), 2000)
   }
 

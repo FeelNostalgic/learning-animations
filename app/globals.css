@@ -4,74 +4,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ECEFF3;
-  --foreground: #1F2937;
-  --card: #F2F5F9;
-  --card-foreground: #1F2937;
-  --popover: #F2F5F9;
-  --popover-foreground: #1F2937;
-  --primary: #0070F3;
+  /* ── Light Mode: Warm Alabaster & Deep Cobalt ─────────────────── */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #2563EB;
   --primary-foreground: #FFFFFF;
-  --secondary: #DEE5EE;
-  --secondary-foreground: #1F2937;
-  --muted: #DEE5EE;
-  --muted-foreground: #5E6B7D;
-  --accent: #DEE5EE;
-  --accent-foreground: #1F2937;
-  --destructive: #EF4444;
-  --border: #CBD5E1;
-  --border-strong: #B4C0D0;
-  --input: #CBD5E1;
-  --ring: #0070F3;
-  --chart-1: #0070F3;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #1E293B;
+  --muted: #F1F5F9;
+  --muted-foreground: #475569;
+  --accent: #F1F5F9;
+  --accent-foreground: #0F172A;
+  --destructive: #DC2626;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --input: #E2E8F0;
+  --ring: #2563EB;
+  --chart-1: #2563EB;
   --chart-2: #10B981;
   --chart-3: #F59E0B;
   --chart-4: #F97316;
-  --chart-5: #A855F7;
-  --sidebar: #E5EBF3;
-  --sidebar-foreground: #1F2937;
-  --sidebar-primary: #0070F3;
+  --chart-5: #8B5CF6;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #2563EB;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #D9E1EB;
-  --sidebar-accent-foreground: #1F2937;
-  --sidebar-border: #CBD5E1;
-  --sidebar-ring: #0070F3;
-  --radius: 0.625rem;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #2563EB;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: #171C22;
-  --foreground: #E5E7EB;
-  --card: #1F2630;
-  --card-foreground: #E5E7EB;
-  --popover: #202834;
-  --popover-foreground: #E5E7EB;
-  --primary: #0070F3;
-  --primary-foreground: #FFFFFF;
-  --secondary: #26303B;
-  --secondary-foreground: #E5E7EB;
-  --muted: #26303B;
-  --muted-foreground: #98A2B3;
-  --accent: #26303B;
-  --accent-foreground: #E5E7EB;
+  /* ── Dark Mode: Dark Obsidian & Electric Sapphire ────────────── */
+  --background: #090D16;
+  --foreground: #F1F5F9;
+  --card: #0F172A;
+  --card-foreground: #F8FAFC;
+  --popover: #0F172A;
+  --popover-foreground: #F8FAFC;
+  --primary: #3B82F6;
+  --primary-foreground: #090D16;
+  --secondary: #1E293B;
+  --secondary-foreground: #F1F5F9;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --accent: #1E293B;
+  --accent-foreground: #F1F5F9;
   --destructive: #EF4444;
-  --border: #3A4656;
-  --border-strong: #566274;
-  --input: #3A4656;
-  --ring: #0070F3;
-  --chart-1: #0070F3;
+  --border: #1E293B;
+  --border-strong: #334155;
+  --input: #1E293B;
+  --ring: #3B82F6;
+  --chart-1: #3B82F6;
   --chart-2: #10B981;
   --chart-3: #F59E0B;
-  --chart-4: #F97316;
+  --chart-4: #FB923C;
   --chart-5: #A855F7;
-  --sidebar: #1B222C;
-  --sidebar-foreground: #E5E7EB;
-  --sidebar-primary: #0070F3;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #26303B;
-  --sidebar-accent-foreground: #E5E7EB;
-  --sidebar-border: #3A4656;
-  --sidebar-ring: #0070F3;
+  --sidebar: #0B111E;
+  --sidebar-foreground: #F1F5F9;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #090D16;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F1F5F9;
+  --sidebar-border: #1E293B;
+  --sidebar-ring: #3B82F6;
 }
 
 @theme {
@@ -112,7 +114,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Industrial Legacy Variables */
+  /* Semantic Accent Variables */
   --color-surface: var(--card);
   --color-surface-dark: var(--secondary);
   --color-border-subtle: var(--border);
@@ -128,11 +130,11 @@
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 12px;
-  --radius-xl: calc(var(--radius, 0.625rem) + 4px);
-  --radius-2xl: calc(var(--radius, 0.625rem) + 8px);
-  --radius-3xl: calc(var(--radius, 0.625rem) + 12px);
-  --radius-4xl: calc(var(--radius, 0.625rem) + 16px);
+  --radius-lg: 10px;
+  --radius-xl: calc(var(--radius, 0.75rem));
+  --radius-2xl: calc(var(--radius, 0.75rem) + 4px);
+  --radius-3xl: calc(var(--radius, 0.75rem) + 8px);
+  --radius-4xl: calc(var(--radius, 0.75rem) + 12px);
 }
 
 @layer base {
@@ -141,25 +143,29 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-primary outline-offset-2;
   }
 }
 
 @layer components {
   .industrial-card {
-    @apply bg-surface border border-border-subtle rounded-lg p-6;
+    @apply bg-card border border-border rounded-xl p-6 shadow-sm;
   }
 
   .industrial-button {
-    @apply bg-surface border border-border-subtle rounded-md px-4 py-2 hover:bg-border-subtle transition-colors text-sm font-mono;
+    @apply bg-card border border-border rounded-xl px-4 py-2 hover:bg-muted transition-all text-xs font-mono;
   }
 
   .industrial-input {
-    @apply bg-background border border-border-subtle rounded-md px-3 py-2 focus:border-accent-blue outline-none text-sm transition-colors;
+    @apply bg-background border border-border rounded-xl px-3 py-2 focus:border-primary outline-none text-xs transition-all shadow-xs;
   }
 
   .bg-radial-grid {
     background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
-    background-size: 40px 40px;
+    background-size: 32px 32px;
   }
 }

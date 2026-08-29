@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import {
   Sparkles,
   PenTool,
@@ -15,12 +16,21 @@ import {
   Eye,
   Search,
   Layers,
-  GraduationCap,
   Loader2,
-  CheckCircle2,
-  AlertCircle,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   toggleAnimationVisibility,
   deleteAnimation,
@@ -41,7 +51,9 @@ export function UserAnimationsDashboard({
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null)
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  // State for customized delete confirmation dialog
+  const [animToDelete, setAnimToDelete] = useState<{ id: string; title: string } | null>(null)
 
   // Extract unique topics from user animations
   const uniqueTopics = useMemo(() => {
@@ -86,20 +98,23 @@ export function UserAnimationsDashboard({
     setLoadingActionId(null)
 
     if (res.success) {
-      setStatusMessage({
-        type: "success",
-        text: nextPublic
-          ? "Animación publicada en el catálogo público"
-          : "Animación cambiada a modo privado",
-      })
-      setTimeout(() => setStatusMessage(null), 3000)
+      if (nextPublic) {
+        toast.success("Animación publicada", {
+          description: "Ahora es visible en el catálogo público de la comunidad.",
+        })
+      } else {
+        toast.info("Animación privada", {
+          description: "La animación ahora solo es visible para ti.",
+        })
+      }
     } else {
       // Revert on error
       setAnimations((prev) =>
         prev.map((a) => (a.id === id ? { ...a, is_public: currentPublic } : a))
       )
-      setStatusMessage({ type: "error", text: res.error || "Error al actualizar visibilidad" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.error("Error al actualizar visibilidad", {
+        description: res.error || "No se pudo cambiar el estado de publicación.",
+      })
     }
   }
 
@@ -110,60 +125,47 @@ export function UserAnimationsDashboard({
     setLoadingActionId(null)
 
     if (res.success && res.id) {
-      setStatusMessage({ type: "success", text: "¡Animación duplicada con éxito!" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.success("Animación duplicada", {
+        description: "Borrador clonado correctamente en tu cuenta.",
+      })
       router.push(`/builder?id=${res.id}`)
     } else {
-      setStatusMessage({ type: "error", text: res.error || "Error al duplicar animación" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.error("Error al duplicar animación", {
+        description: res.error || "No se pudo clonar la animación.",
+      })
     }
   }
 
-  // Handle delete
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar la animación "${title}"?`)) {
-      return
-    }
+  // Confirm delete execution
+  const handleConfirmDelete = async () => {
+    if (!animToDelete) return
 
+    const { id, title } = animToDelete
     setLoadingActionId(`del-${id}`)
+    setAnimToDelete(null)
+
     const res = await deleteAnimation(id)
     setLoadingActionId(null)
 
     if (res.success) {
       setAnimations((prev) => prev.filter((a) => a.id !== id))
-      setStatusMessage({ type: "success", text: "Animación eliminada correctamente" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.success("Animación eliminada", {
+        description: `"${title}" ha sido eliminada permanentemente.`,
+      })
     } else {
-      setStatusMessage({ type: "error", text: res.error || "Error al eliminar animación" })
-      setTimeout(() => setStatusMessage(null), 3000)
+      toast.error("Error al eliminar animación", {
+        description: res.error || "No se pudo eliminar la animación.",
+      })
     }
   }
 
   return (
     <div className="space-y-6 select-none">
-      {/* ── Status Toast Message ──────────────────────────────────── */}
-      {statusMessage && (
-        <div
-          className={`flex items-center gap-2 rounded-xl p-3 text-xs font-semibold shadow-md ${
-            statusMessage.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-              : "bg-destructive/10 border border-destructive/30 text-destructive"
-          }`}
-        >
-          {statusMessage.type === "success" ? (
-            <CheckCircle2 className="size-4 shrink-0" />
-          ) : (
-            <AlertCircle className="size-4 shrink-0" />
-          )}
-          <span>{statusMessage.text}</span>
-        </div>
-      )}
-
       {/* ── Search & Filter Toolbar ───────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         {/* Search */}
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 size-3.5 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-2.5 size-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar por título, categoría..."
@@ -265,19 +267,19 @@ export function UserAnimationsDashboard({
             return (
               <div
                 key={anim.id}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-4 shadow-md transition-all duration-200 hover:border-primary/50 hover:shadow-xl"
+                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-4 shadow-sm transition-all duration-200 hover:border-primary/50 hover:shadow-xl"
               >
                 {/* Card Top: Topic Pill & Privacy Toggle */}
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-[10px] font-bold text-primary uppercase tracking-wider truncate max-w-[140px]">
+                  <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider text-primary border-primary/30 bg-primary/5 truncate max-w-[140px]">
                     {anim.topic}
-                  </span>
+                  </Badge>
 
                   {/* Public / Private Toggle */}
                   <button
                     onClick={() => handleToggleVisibility(anim.id!, anim.is_public)}
                     disabled={isVisLoading}
-                    className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold border transition-all cursor-pointer ${
+                    className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold border transition-all cursor-pointer ${
                       anim.is_public
                         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                         : "border-border bg-muted/40 text-muted-foreground hover:text-foreground"
@@ -359,7 +361,7 @@ export function UserAnimationsDashboard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(anim.id!, anim.title)}
+                    onClick={() => setAnimToDelete({ id: anim.id!, title: anim.title })}
                     disabled={isDelLoading}
                     className="h-7 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                     title="Eliminar animación"
@@ -394,6 +396,38 @@ export function UserAnimationsDashboard({
           </Link>
         </div>
       )}
+
+      {/* ── Custom Accessible Alert Dialog for Deletion ─────────── */}
+      <AlertDialog
+        open={Boolean(animToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setAnimToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2.5 text-destructive">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
+                <AlertTriangle className="size-5" />
+              </div>
+              <AlertDialogTitle>¿Eliminar esta animación?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Estás a punto de eliminar de forma permanente la animación{" "}
+              <strong className="text-foreground">"{animToDelete?.title}"</strong>. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar Definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -19,6 +19,7 @@ import { StepInspector } from "@/components/builder/step-inspector"
 import { AnimationPlayer } from "@/components/animations/animation-player"
 import { UniversalAnimationPlayer } from "@/components/animations/universal-animation-player"
 import { saveAnimation, getAnimationById } from "@/app/builder/actions"
+import { toast } from "sonner"
 import {
   universalToReactFlow,
   reactFlowToUniversal,
@@ -171,7 +172,6 @@ function BuilderContent() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingAnimation, setIsLoadingAnimation] = useState(false)
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   // Connect handler in React Flow with forward arrowhead by default
   const onConnect = useCallback(
@@ -223,7 +223,9 @@ function BuilderContent() {
         setNodes(rf.nodes)
         setEdges(rf.edges)
       } else {
-        setStatusMessage({ type: "error", text: "No se pudo cargar la animación solicitada." })
+        toast.error("No se pudo cargar la animación", {
+          description: "Verifica que el identificador sea correcto o que tengas permisos de acceso.",
+        })
       }
     }
 
@@ -249,8 +251,9 @@ function BuilderContent() {
     setSelectedEdgeId(null)
     setSelectedStepIndex(0)
     setIsPreviewOpen(false)
-    setStatusMessage({ type: "success", text: "Lienzo reiniciado para una nueva animación." })
-    setTimeout(() => setStatusMessage(null), 3000)
+    toast.info("Lienzo reiniciado", {
+      description: "Plantilla en blanco cargada para una nueva animación.",
+    })
     window.history.replaceState(null, "", "/builder")
   }
 
@@ -459,22 +462,25 @@ function BuilderContent() {
   // Save Animation to Supabase
   const handleSave = async () => {
     setIsSaving(true)
-    setStatusMessage(null)
 
     const res = await saveAnimation(currentUniversalData)
     setIsSaving(false)
 
     if (res.success) {
       if (res.id) setAnimationId(res.id)
-      setStatusMessage({
-        type: "success",
-        text: isPublic
-          ? "¡Animación guardada y publicada en el catálogo!"
-          : "¡Animación guardada como privada en tu panel!",
-      })
-      setTimeout(() => setStatusMessage(null), 4000)
+      if (isPublic) {
+        toast.success("¡Animación guardada y publicada!", {
+          description: "La animación ahora es visible en el catálogo de la comunidad.",
+        })
+      } else {
+        toast.success("¡Animación guardada con éxito!", {
+          description: "Guardada como borrador privado en tu panel de animaciones.",
+        })
+      }
     } else {
-      setStatusMessage({ type: "error", text: res.error || "Error al guardar" })
+      toast.error("Error al guardar", {
+        description: res.error || "No se pudo guardar la animación en Supabase.",
+      })
     }
   }
 
@@ -582,20 +588,6 @@ function BuilderContent() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
-          {statusMessage && (
-            <div
-              className={`flex items-center gap-1.5 text-xs font-medium ${
-                statusMessage.type === "success" ? "text-emerald-500" : "text-destructive"
-              }`}
-            >
-              {statusMessage.type === "success" ? (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              ) : (
-                <AlertCircle className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden lg:inline">{statusMessage.text}</span>
-            </div>
-          )}
 
 
           {/* New Animation Button */}
