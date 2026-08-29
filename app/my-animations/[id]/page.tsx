@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { getAnimationById } from "@/app/builder/actions"
 import { AnimationPlayer } from "@/components/animations/animation-player"
-import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
+import { UniversalAnimationPlayer } from "@/components/animations/universal-animation-player"
 import { Metadata } from "next"
 
 export async function generateMetadata({
@@ -12,7 +12,7 @@ export async function generateMetadata({
   const { id } = await params
   const res = await getAnimationById(id)
   return {
-    title: res.data ? `Animación: ${res.data.title}` : "Animación",
+    title: res.data ? `Animación: ${res.data.title}` : "Animación Educativa",
   }
 }
 
@@ -31,7 +31,7 @@ export default async function UserAnimationDetailPage({
   const anim = res.data
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-6rem)] flex flex-col">
+    <div className="max-w-5xl mx-auto h-[calc(100vh-6rem)] flex flex-col p-4">
       <AnimationPlayer
         steps={anim.steps}
         title={anim.title}
@@ -39,7 +39,7 @@ export default async function UserAnimationDetailPage({
         isDynamic={true}
         editHref={`/builder?id=${anim.id}`}
       >
-        <DynamicAnimationPlayer animation={anim} />
+        <UniversalAnimationPlayer animation={anim} />
       </AnimationPlayer>
     </div>
   )

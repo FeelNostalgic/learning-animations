@@ -84,8 +84,9 @@ export const universalConnectorSchema = z.object({
   arrowEnd: arrowheadKindEnum.optional(),
   dashed: z.boolean().optional().default(false),
   color: z.string().optional(),
-  strokeWidth: z.number().positive().optional(),
+  strokeWidth: z.number().nonnegative().optional(),
   label: z.string().optional(),
+  labelPosition: z.number().min(0).max(1).optional(),
   ariaLabel: z.string().optional(),
 })
 

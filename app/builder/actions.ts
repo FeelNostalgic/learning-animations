@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server"
 import { universalAnimationSchema } from "@/lib/validations/universal-animation"
 import type { UniversalAnimationData } from "@/types/universal-animation"
 
+/**
+ * Saves or updates a universal animation in Supabase.
+ */
 export async function saveAnimation(
   data: UniversalAnimationData
 ): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -46,7 +49,7 @@ export async function saveAnimation(
     }
 
     if (validData.id) {
-      // Update existing
+      // Update existing animation (RLS ensures user owns the row)
       const { data: updated, error } = await supabase
         .from("animations")
         .update(payload)
@@ -63,7 +66,7 @@ export async function saveAnimation(
       revalidatePath(`/my-animations/${validData.id}`)
       return { success: true, id: updated.id }
     } else {
-      // Insert new
+      // Insert brand new animation
       const { data: inserted, error } = await supabase
         .from("animations")
         .insert(payload)
@@ -83,6 +86,9 @@ export async function saveAnimation(
   }
 }
 
+/**
+ * Retrieves a single animation by its UUID.
+ */
 export async function getAnimationById(
   id: string
 ): Promise<{ success: boolean; data?: UniversalAnimationData; error?: string }> {
@@ -126,6 +132,9 @@ export async function getAnimationById(
   }
 }
 
+/**
+ * Retrieves all animations created by the authenticated user.
+ */
 export async function getUserAnimations(): Promise<{
   success: boolean
   data?: UniversalAnimationData[]
@@ -180,6 +189,106 @@ export async function getUserAnimations(): Promise<{
   }
 }
 
+/**
+ * Toggles the public/private visibility state of an animation.
+ */
+export async function toggleAnimationVisibility(
+  id: string,
+  is_public: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return { success: false, error: "No autenticado" }
+    }
+
+    const { error } = await supabase
+      .from("animations")
+      .update({ is_public, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("user_id", user.id)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath("/animations")
+    revalidatePath("/my-animations")
+    revalidatePath(`/my-animations/${id}`)
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message || "Error al cambiar visibilidad" }
+  }
+}
+
+/**
+ * Clones/forks an existing animation into a new draft for the current user.
+ */
+export async function forkAnimation(
+  sourceId: string
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return { success: false, error: "Debes iniciar sesión para duplicar la animación." }
+    }
+
+    const sourceRes = await getAnimationById(sourceId)
+    if (!sourceRes.success || !sourceRes.data) {
+      return { success: false, error: "Animación de origen no encontrada" }
+    }
+
+    const source = sourceRes.data
+
+    const payload = {
+      title: `${source.title} (Copia)`,
+      description: source.description || "",
+      discipline: source.discipline || "general",
+      topic: source.topic,
+      tags: source.tags || [],
+      difficulty: source.difficulty || "beginner",
+      is_public: false,
+      nodes: source.nodes as any,
+      connectors: (source.connectors || []) as any,
+      links: (source.connectors || []) as any,
+      steps: source.steps as any,
+      user_id: user.id,
+      forked_from: source.id,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("animations")
+      .insert(payload)
+      .select("id")
+      .single()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath("/my-animations")
+    return { success: true, id: inserted.id }
+  } catch (err: any) {
+    return { success: false, error: err.message || "Error al duplicar la animación" }
+  }
+}
+
+/**
+ * Deletes an animation permanently.
+ */
 export async function deleteAnimation(id: string): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient()
@@ -190,6 +299,7 @@ export async function deleteAnimation(id: string): Promise<{ success: boolean; e
       return { success: false, error: error.message }
     }
 
+    revalidatePath("/animations")
     revalidatePath("/my-animations")
     return { success: true }
   } catch (err: any) {
