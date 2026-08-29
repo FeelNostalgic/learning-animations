@@ -1,6 +1,6 @@
 {
   "name": "learning-animations",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "description": "Educational Interactive Network Animations",
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",
@@ -46,6 +47,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^25.3.2",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
