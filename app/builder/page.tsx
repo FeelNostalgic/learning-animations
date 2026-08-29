@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, Suspense } from "react"
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   ReactFlowProvider,
@@ -25,6 +25,11 @@ import {
   universalToReactFlow,
   reactFlowToUniversal,
 } from "@/lib/animations/react-flow-adapter"
+import { evaluateStepScene } from "@/lib/animations/live-step-evaluator"
+import {
+  StudioPlaybackController,
+  type PlaybackMode,
+} from "@/lib/animations/studio-playback-controller"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import {
@@ -174,9 +179,54 @@ function BuilderContent() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [selectedStepIndex, setSelectedStepIndex] = useState(0)
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("idle")
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0)
+  const [playbackProgress, setPlaybackProgress] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingAnimation, setIsLoadingAnimation] = useState(false)
+
+  const playbackControllerRef = useRef<StudioPlaybackController | null>(null)
+
+  if (!playbackControllerRef.current) {
+    playbackControllerRef.current = new StudioPlaybackController({
+      onModeChange: (mode) => setPlaybackMode(mode),
+      onStepChange: (idx) => setSelectedStepIndex(idx),
+      onProgress: (prog) => setPlaybackProgress(prog),
+    })
+  }
+
+  useEffect(() => {
+    return () => {
+      playbackControllerRef.current?.stop()
+    }
+  }, [])
+
+  const handlePlayStep = () => {
+    playbackControllerRef.current?.setSpeed(playbackSpeed)
+    playbackControllerRef.current?.playCurrentStep(selectedStepIndex, steps)
+  }
+
+  const handlePlayAll = () => {
+    playbackControllerRef.current?.setSpeed(playbackSpeed)
+    playbackControllerRef.current?.playFullSequence(0, steps)
+  }
+
+  const handlePause = () => {
+    playbackControllerRef.current?.pause()
+  }
+
+  const handleResume = () => {
+    playbackControllerRef.current?.resume(steps)
+  }
+
+  const handleStop = () => {
+    playbackControllerRef.current?.stop()
+  }
+
+  const handleSpeedChange = (s: number) => {
+    setPlaybackSpeed(s)
+    playbackControllerRef.current?.setSpeed(s)
+  }
 
   // Connect handler in React Flow with forward arrowhead by default
   const onConnect = useCallback(
@@ -467,6 +517,55 @@ function BuilderContent() {
     background,
   })
 
+  // Live evaluated scene for the active step (WYSIWYG 1:1)
+  const evaluatedScene = useMemo(() => {
+    return evaluateStepScene(
+      currentUniversalData.nodes,
+      currentUniversalData.connectors,
+      steps,
+      selectedStepIndex
+    )
+  }, [currentUniversalData.nodes, currentUniversalData.connectors, steps, selectedStepIndex])
+
+  // Nodes with evaluated live action states (badges, glows, overrides)
+  const liveNodes: Node[] = useMemo(() => {
+    return nodes.map((n) => {
+      const nState = evaluatedScene.nodeStates[n.id]
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          evaluatedState: nState,
+        },
+      }
+    })
+  }, [nodes, evaluatedScene.nodeStates])
+
+  // Edges with evaluated live action states (packets, animations)
+  const liveEdges: Edge[] = useMemo(() => {
+    return edges.map((e) => {
+      const eState = evaluatedScene.edgeStates[e.id]
+      if (!eState) return e
+
+      const strokeColor =
+        eState.highlightColor === "active" ? "var(--primary)" : eState.packetColor || e.style?.stroke
+
+      return {
+        ...e,
+        animated: eState.isAnimated !== undefined ? eState.isAnimated : e.animated,
+        label: eState.packetLabel ? `📦 ${eState.packetLabel}` : e.label,
+        style: {
+          ...e.style,
+          stroke: strokeColor,
+          strokeWidth:
+            (eState.strokeWidth ||
+              (typeof e.style?.strokeWidth === "number" ? e.style.strokeWidth : 2)) +
+            (eState.highlightColor ? 1 : 0),
+        },
+      }
+    })
+  }, [edges, evaluatedScene.edgeStates])
+
   // Save Animation to Supabase
   const handleSave = async () => {
     setIsSaving(true)
@@ -616,17 +715,6 @@ function BuilderContent() {
             onUpdateBackground={setBackground}
           />
 
-          {/* Preview Toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            {isPreviewOpen ? "Editor Studio" : "Previsualizar"}
-          </Button>
-
           {/* Save / Update Button */}
           <Button
             size="sm"
@@ -645,35 +733,43 @@ function BuilderContent() {
         </div>
       </div>
 
-      {/* ── Main Workspace Body ───────────────────────────────────── */}
-      {isPreviewOpen ? (
-        <div className="flex flex-1 overflow-hidden p-4">
-          <div className="h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-            <AnimationPlayer steps={steps} title={title}>
-              <UniversalAnimationPlayer animation={currentUniversalData} />
-            </AnimationPlayer>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Main Top Area: Left (Full Height Assets), Center (Canvas + Floating Inspector), Right (Step Inspector) */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left: Multidisciplinary Assets Palette (100% Vertical Space) */}
-            <AssetsSidebar onAddNode={handleAddNode} />
+      {/* ── Main Workspace Body (WYSIWYG 1:1 Always Active) ──────── */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Main Top Area: Left (Full Height Assets), Center (Canvas + Floating Inspector), Right (Step Inspector) */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: Multidisciplinary Assets Palette (100% Vertical Space) */}
+          <AssetsSidebar onAddNode={handleAddNode} />
 
-            {/* Center: React Flow Canvas (Loose Handles, Context Menu & Floating Property Panel in Top-Left) */}
-            <Canvas
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              selectedNodeId={selectedNodeId}
-              selectedEdgeId={selectedEdgeId}
-              selectedNode={selectedUniversalNode}
-              selectedEdge={selectedEdge}
-              background={background}
-              onSelectNode={(id) => {
+          {/* Center: React Flow Canvas with Real-Time WYSIWYG 1:1 Live Preview */}
+          <Canvas
+            nodes={liveNodes}
+            edges={liveEdges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            selectedNodeId={selectedNodeId}
+            selectedEdgeId={selectedEdgeId}
+            selectedNode={selectedUniversalNode}
+            selectedEdge={selectedEdge}
+            background={background}
+            playbackProps={{
+              currentStepIndex: selectedStepIndex,
+              totalSteps: steps.length,
+              stepLabel: steps[selectedStepIndex]?.label || "Paso",
+              mode: playbackMode,
+              speed: playbackSpeed,
+              progress: playbackProgress,
+              actionCount: steps[selectedStepIndex]?.actions?.length || 0,
+              onPlayStep: handlePlayStep,
+              onPlayAll: handlePlayAll,
+              onPause: handlePause,
+              onResume: handleResume,
+              onStop: handleStop,
+              onNextStep: () => setSelectedStepIndex((prev) => Math.min(steps.length - 1, prev + 1)),
+              onPrevStep: () => setSelectedStepIndex((prev) => Math.max(0, prev - 1)),
+              onSpeedChange: handleSpeedChange,
+            }}
+            onSelectNode={(id) => {
                 setSelectedNodeId(id)
                 if (id) setSelectedEdgeId(null)
               }}
@@ -710,7 +806,6 @@ function BuilderContent() {
             onReorderSteps={handleReorderSteps}
           />
         </div>
-      )}
     </div>
   )
 }

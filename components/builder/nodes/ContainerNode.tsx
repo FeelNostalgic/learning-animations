@@ -2,18 +2,14 @@
 
 import React, { memo, useState, useRef, useEffect, useCallback } from "react"
 import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from "@xyflow/react"
-import { Box } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { UniversalNodeView } from "@/components/animations/visual/universal-node-view"
+import type { UniversalNode } from "@/types/universal-animation"
 
 export const ContainerNode = memo(({ id, data, selected }: NodeProps) => {
   const { setNodes } = useReactFlow()
   const label = (data.label as string) || "Contenedor / Grupo"
-  const width = (data.width as number) || 320
-  const height = (data.height as number) || 200
-  const fill = (data.fill as string) || "transparent"
-  const stroke = (data.stroke as string) || "var(--border)"
-  const strokeWidth = data.strokeWidth !== undefined ? (data.strokeWidth as number) : 1.5
-  const opacity = data.opacity !== undefined ? (data.opacity as number) : 1
+  const content = (data.content as string) || ""
+  const evaluatedState = data.evaluatedState as any
 
   const [isEditingInline, setIsEditingInline] = useState(false)
   const [editLabel, setEditLabel] = useState(label)
@@ -50,24 +46,29 @@ export const ContainerNode = memo(({ id, data, selected }: NodeProps) => {
     [id, setNodes]
   )
 
+  const nodeData: UniversalNode = {
+    id,
+    type: "container",
+    label,
+    content,
+    x: 0,
+    y: 0,
+    width: (data.width as number) || 320,
+    height: (data.height as number) || 200,
+    fill: data.fill as string,
+    stroke: data.stroke as string,
+    strokeWidth: data.strokeWidth as number,
+    opacity: data.opacity as number,
+  }
+
   return (
     <div
       onDoubleClick={() => setIsEditingInline(true)}
-      className={cn(
-        "relative rounded-2xl p-4 transition-all",
-        selected && "border-primary ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
-      )}
-      style={{
-        width,
-        height,
-        backgroundColor: fill === "transparent" ? "rgba(100, 116, 139, 0.06)" : fill,
-        border: strokeWidth > 0 ? `${strokeWidth}px dashed ${stroke}` : "none",
-        opacity,
-      }}
+      className="relative flex items-center justify-center cursor-grab active:cursor-grabbing"
     >
       <NodeResizer
         isVisible={selected}
-        minWidth={150}
+        minWidth={160}
         minHeight={100}
         onResize={handleResize}
         handleClassName="!w-2.5 !h-2.5 !bg-primary !border-2 !border-background !rounded-full"
@@ -99,9 +100,12 @@ export const ContainerNode = memo(({ id, data, selected }: NodeProps) => {
         className="!h-2.5 !w-2.5 !bg-primary border-2 border-background"
       />
 
-      <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-        <Box className="size-3.5 text-primary shrink-0" />
-        {isEditingInline ? (
+      <UniversalNodeView
+        node={nodeData}
+        evaluatedState={evaluatedState}
+        isEditingInline={isEditingInline}
+        className={selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl" : ""}
+        inlineEditorContent={
           <input
             ref={inputRef}
             type="text"
@@ -115,12 +119,10 @@ export const ContainerNode = memo(({ id, data, selected }: NodeProps) => {
             }}
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            className="nodrag nopan nowheel bg-background/90 rounded px-1 text-xs text-foreground focus:outline-none font-bold"
+            className="nodrag nopan nowheel w-full bg-background/80 rounded px-1 font-bold text-xs text-foreground focus:outline-none"
           />
-        ) : (
-          <span className="truncate">{label}</span>
-        )}
-      </div>
+        }
+      />
     </div>
   )
 })
