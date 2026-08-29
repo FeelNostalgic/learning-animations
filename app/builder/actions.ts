@@ -93,6 +93,11 @@ export async function getAnimationById(
   id: string
 ): Promise<{ success: boolean; data?: UniversalAnimationData; error?: string }> {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!supabaseUrl || supabaseUrl.includes("placeholder-project")) {
+      return { success: false, error: "Animación no encontrada" }
+    }
+
     const supabase = await createClient()
 
     const { data, error } = await supabase
@@ -316,6 +321,11 @@ export async function getPublicAnimations(): Promise<{
   error?: string
 }> {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!supabaseUrl || supabaseUrl.includes("placeholder-project")) {
+      return { success: true, data: [] }
+    }
+
     const supabase = await createClient()
 
     const { data, error } = await supabase
