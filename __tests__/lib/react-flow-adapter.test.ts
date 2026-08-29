@@ -14,6 +14,11 @@ describe("React Flow <-> UniversalAnimationData Adapter (TDD)", () => {
     tags: ["matemáticas", "cálculo", "integrales"],
     difficulty: "advanced",
     is_public: true,
+    background: {
+      type: "gradient",
+      gradient: { from: "#090D16", to: "#1E1B4B", direction: "to-br" },
+      pattern: "dots",
+    },
     nodes: [
       {
         id: "node-func",
@@ -106,11 +111,13 @@ describe("React Flow <-> UniversalAnimationData Adapter (TDD)", () => {
         tags: sampleUniversalData.tags,
         difficulty: sampleUniversalData.difficulty,
         is_public: sampleUniversalData.is_public,
+        background: sampleUniversalData.background,
       }
     )
 
     expect(recovered.title).toBe(sampleUniversalData.title)
     expect(recovered.discipline).toBe("math")
+    expect(recovered.background).toEqual(sampleUniversalData.background)
     expect(recovered.nodes).toHaveLength(3)
 
     const updatedFuncNode = recovered.nodes.find((n) => n.id === "node-func")

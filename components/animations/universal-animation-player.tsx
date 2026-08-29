@@ -21,6 +21,7 @@ import {
   sampleConnectorPoints,
   type UniversalPaletteColors,
 } from "@/lib/animations/universal-compiler"
+import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
 import type {
   UniversalAnimationData,
   UniversalNode,
@@ -333,12 +334,26 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
     }
   }
 
+  const isLight = resolvedTheme === "light"
+  const bgStyle = getBackgroundInlineStyle(animation.background, isLight ? "light" : "dark")
+  const patternBg = getPatternSvgPattern(animation.background?.pattern, !isLight)
+
   return (
-    <div className={`relative h-full w-full select-none overflow-hidden ${className || ""}`}>
+    <div
+      className={`relative h-full w-full select-none overflow-hidden transition-colors duration-300 ${className || ""}`}
+      style={bgStyle}
+    >
+      {/* Optional decorative grid / dot pattern overlay */}
+      {patternBg && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{ backgroundImage: patternBg, backgroundSize: "24px 24px" }}
+        />
+      )}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VB.w} ${VB.h}`}
-        className="h-full w-full overflow-visible"
+        className="relative z-10 h-full w-full overflow-visible"
         aria-label={`Visualización interactiva: ${animation.title}`}
         role="img"
       >
