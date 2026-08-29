@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronRight, User as UserIcon, LogOut, LogIn, UserPlus, Sparkles, BookOpen } from "lucide-react"
@@ -9,15 +9,21 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { createClient } from "@/lib/supabase/client"
 import { signOut } from "@/app/auth/actions"
 import { type User } from "@supabase/supabase-js"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const AUTH_PATHS = ["/login", "/signup", "/forgot-password"]
 
 export function AppHeader() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [dynamicTitle, setDynamicTitle] = useState<string | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -56,17 +62,6 @@ export function AppHeader() {
   useEffect(() => {
     setDynamicTitle(null)
   }, [pathname])
-
-  // Close menu on click outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
 
   // Don't render header in embed mode or on auth pages
   if (pathname.startsWith("/embed") || AUTH_PATHS.includes(pathname)) {
@@ -146,51 +141,42 @@ export function AppHeader() {
         <ThemeToggle />
 
         {user ? (
-          /* User Profile Dropdown Menu (Logged in only) */
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
-              aria-label="Menú de usuario"
-            >
-              <UserIcon className="h-4 w-4 text-muted-foreground" />
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 text-xs">
-                <div className="border-b border-border px-3 py-2">
-                  <p className="font-semibold text-foreground truncate">
-                    {user.user_metadata?.username ? `@${user.user_metadata.username}` : user.email}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-                </div>
-
-                <div className="py-1">
-                  <Link
-                    href="/my-animations"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-accent transition-colors"
-                  >
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    <span>Mis Animaciones</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-border pt-1">
-                  <button
-                    onClick={async () => {
-                      setMenuOpen(false)
-                      await signOut()
-                    }}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-destructive hover:bg-destructive/10 transition-colors text-left cursor-pointer"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    <span>Cerrar Sesión</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          /* User Profile Dropdown Menu (Shadcn UI) */
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+                aria-label="Menú de usuario"
+              >
+                <UserIcon className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <p className="font-semibold text-foreground truncate">
+                  {user.user_metadata?.username ? `@${user.user_metadata.username}` : user.email}
+                </p>
+                <p className="text-[11px] font-normal text-muted-foreground truncate">{user.email}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/my-animations" className="flex items-center gap-2 w-full cursor-pointer">
+                  <Sparkles className="size-3.5 text-primary" />
+                  <span>Mis Animaciones</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  await signOut()
+                }}
+                className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+              >
+                <LogOut className="size-3.5 mr-2" />
+                <span>Cerrar Sesión</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           /* Explicit Auth Buttons (Logged out visitor) */
           <div className="flex items-center gap-1.5">

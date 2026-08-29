@@ -19,8 +19,20 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   toggleAnimationVisibility,
   deleteAnimation,
@@ -42,6 +54,9 @@ export function UserAnimationsDashboard({
   const [searchQuery, setSearchQuery] = useState("")
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  // State for customized delete confirmation dialog
+  const [animToDelete, setAnimToDelete] = useState<{ id: string; title: string } | null>(null)
 
   // Extract unique topics from user animations
   const uniqueTopics = useMemo(() => {
@@ -119,13 +134,14 @@ export function UserAnimationsDashboard({
     }
   }
 
-  // Handle delete
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar la animación "${title}"?`)) {
-      return
-    }
+  // Confirm delete execution
+  const handleConfirmDelete = async () => {
+    if (!animToDelete) return
 
+    const { id } = animToDelete
     setLoadingActionId(`del-${id}`)
+    setAnimToDelete(null)
+
     const res = await deleteAnimation(id)
     setLoadingActionId(null)
 
@@ -163,7 +179,7 @@ export function UserAnimationsDashboard({
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         {/* Search */}
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 size-3.5 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-2.5 size-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar por título, categoría..."
@@ -265,19 +281,19 @@ export function UserAnimationsDashboard({
             return (
               <div
                 key={anim.id}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-4 shadow-md transition-all duration-200 hover:border-primary/50 hover:shadow-xl"
+                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-4 shadow-sm transition-all duration-200 hover:border-primary/50 hover:shadow-xl"
               >
                 {/* Card Top: Topic Pill & Privacy Toggle */}
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-[10px] font-bold text-primary uppercase tracking-wider truncate max-w-[140px]">
+                  <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider text-primary border-primary/30 bg-primary/5 truncate max-w-[140px]">
                     {anim.topic}
-                  </span>
+                  </Badge>
 
                   {/* Public / Private Toggle */}
                   <button
                     onClick={() => handleToggleVisibility(anim.id!, anim.is_public)}
                     disabled={isVisLoading}
-                    className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold border transition-all cursor-pointer ${
+                    className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold border transition-all cursor-pointer ${
                       anim.is_public
                         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                         : "border-border bg-muted/40 text-muted-foreground hover:text-foreground"
@@ -359,7 +375,7 @@ export function UserAnimationsDashboard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDelete(anim.id!, anim.title)}
+                    onClick={() => setAnimToDelete({ id: anim.id!, title: anim.title })}
                     disabled={isDelLoading}
                     className="h-7 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                     title="Eliminar animación"
@@ -394,6 +410,38 @@ export function UserAnimationsDashboard({
           </Link>
         </div>
       )}
+
+      {/* ── Custom Accessible Alert Dialog for Deletion ─────────── */}
+      <AlertDialog
+        open={Boolean(animToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setAnimToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2.5 text-destructive">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
+                <AlertTriangle className="size-5" />
+              </div>
+              <AlertDialogTitle>¿Eliminar esta animación?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Estás a punto de eliminar de forma permanente la animación{" "}
+              <strong className="text-foreground">"{animToDelete?.title}"</strong>. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar Definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
