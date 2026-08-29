@@ -109,8 +109,16 @@ describe("Live Step Scene Evaluator (WYSIWYG 1:1)", () => {
     },
   ]
 
-  it("evaluates Step 1 actions (highlight, badge, packet animation)", () => {
-    const scene = evaluateStepScene(mockNodes, mockConnectors, mockSteps, 0)
+  it("returns clean idle state in edit mode when isPlaying is false", () => {
+    const scene = evaluateStepScene(mockNodes, mockConnectors, mockSteps, 0, false)
+
+    expect(scene.activeStepLabel).toBe("1. Envío de Petición")
+    expect(scene.nodeStates).toEqual({})
+    expect(scene.edgeStates).toEqual({})
+  })
+
+  it("evaluates Step 1 actions during active playback (isPlaying: true)", () => {
+    const scene = evaluateStepScene(mockNodes, mockConnectors, mockSteps, 0, true)
 
     expect(scene.activeStepLabel).toBe("1. Envío de Petición")
     expect(scene.stepDuration).toBe(2.5)
@@ -129,8 +137,8 @@ describe("Live Step Scene Evaluator (WYSIWYG 1:1)", () => {
     expect(conn1State.packetColor).toBe("#3B82F6")
   })
 
-  it("evaluates Step 2 actions (pulse, tooltip, style overrides, transform offsets)", () => {
-    const scene = evaluateStepScene(mockNodes, mockConnectors, mockSteps, 1)
+  it("evaluates Step 2 actions during active playback (isPlaying: true)", () => {
+    const scene = evaluateStepScene(mockNodes, mockConnectors, mockSteps, 1, true)
 
     expect(scene.activeStepLabel).toBe("2. Respuesta y Transformación")
 
@@ -150,7 +158,7 @@ describe("Live Step Scene Evaluator (WYSIWYG 1:1)", () => {
   })
 
   it("returns safe defaults when steps list is empty", () => {
-    const scene = evaluateStepScene(mockNodes, mockConnectors, [], 0)
+    const scene = evaluateStepScene(mockNodes, mockConnectors, [], 0, true)
     expect(scene.activeStepLabel).toBe("")
     expect(scene.nodeStates).toEqual({})
     expect(scene.edgeStates).toEqual({})

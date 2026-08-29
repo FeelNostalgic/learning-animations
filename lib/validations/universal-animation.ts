@@ -180,6 +180,21 @@ export const universalStepSchema = z.object({
   interaction: universalInteractionSchema.optional(),
 })
 
+export const animationBackgroundSchema = z.object({
+  type: z.enum(["solid", "gradient", "image"]).default("solid"),
+  color: z.string().optional(),
+  gradient: z
+    .object({
+      from: z.string(),
+      to: z.string(),
+      direction: z.string().optional(),
+    })
+    .optional(),
+  imageUrl: z.string().optional(),
+  pattern: z.enum(["dots", "grid", "lines", "cross", "none"]).optional(),
+  opacity: z.number().min(0).max(1).optional(),
+})
+
 export const universalAnimationSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().min(1, "El título es obligatorio").max(120),
@@ -189,6 +204,7 @@ export const universalAnimationSchema = z.object({
   tags: z.array(z.string()).default([]),
   difficulty: difficultyEnum.default("beginner"),
   is_public: z.boolean().default(false),
+  background: animationBackgroundSchema.optional(),
   nodes: z.array(universalNodeSchema).min(1, "Debe tener al menos un nodo"),
   connectors: z.array(universalConnectorSchema).default([]),
   steps: z.array(universalStepSchema).min(1, "Debe tener al menos un paso"),

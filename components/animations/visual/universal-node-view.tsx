@@ -87,11 +87,19 @@ export const UniversalNodeView = memo(function UniversalNodeView({
     ? highlightStyles[highlightColor] || `ring-4 ring-[${highlightColor}] shadow-2xl`
     : ""
 
-  const shapeType = shapeDetails.shapeType || "circle"
+  const shapeType = shapeDetails?.shapeType || "circle"
   const isCircle = shapeType === "circle"
   const isDiamond = shapeType === "diamond"
   const isTriangle = shapeType === "triangle"
   const isPill = shapeType === "pill"
+  const isRounded =
+    type === "math" ||
+    type === "text" ||
+    type === "code" ||
+    type === "image" ||
+    type === "network" ||
+    type === "container" ||
+    (type === "shape" && !isCircle && !isPill && !isDiamond && !isTriangle)
 
   const renderNetworkIcon = () => {
     const netType = props.networkType || "pc"
@@ -115,6 +123,9 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       onClick={onClick}
       className={cn(
         "relative flex select-none transition-all duration-300",
+        (isCircle || isPill) && "rounded-full",
+        isRounded && "rounded-xl",
+        isDiamond && "rounded-md",
         highlightClass,
         pulseGlow && "animate-pulse",
         className

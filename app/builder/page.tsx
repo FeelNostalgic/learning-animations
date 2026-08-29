@@ -307,7 +307,6 @@ function BuilderContent() {
     setSelectedNodeId(null)
     setSelectedEdgeId(null)
     setSelectedStepIndex(0)
-    setIsPreviewOpen(false)
     toast.info("Lienzo reiniciado", {
       description: "Plantilla en blanco cargada para una nueva animación.",
     })
@@ -518,14 +517,16 @@ function BuilderContent() {
   })
 
   // Live evaluated scene for the active step (WYSIWYG 1:1)
+  const isPlaying = playbackMode === "playing_step" || playbackMode === "playing_all"
   const evaluatedScene = useMemo(() => {
     return evaluateStepScene(
       currentUniversalData.nodes,
       currentUniversalData.connectors,
       steps,
-      selectedStepIndex
+      selectedStepIndex,
+      isPlaying
     )
-  }, [currentUniversalData.nodes, currentUniversalData.connectors, steps, selectedStepIndex])
+  }, [currentUniversalData.nodes, currentUniversalData.connectors, steps, selectedStepIndex, isPlaying])
 
   // Nodes with evaluated live action states (badges, glows, overrides)
   const liveNodes: Node[] = useMemo(() => {
@@ -744,6 +745,7 @@ function BuilderContent() {
           <Canvas
             nodes={liveNodes}
             edges={liveEdges}
+            currentStep={steps[selectedStepIndex]}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}

@@ -39,27 +39,28 @@ export interface EvaluatedStepScene {
 
 /**
  * Computes the real-time visual scene state for a specific step in the Studio.
- * Evaluates actions in the active step and any prior persistent state modifications.
+ * When isPlaying is false, returns clean idle state so nodes don't animate prematurely in edit mode.
  */
 export function evaluateStepScene(
   nodes: UniversalNode[],
   connectors: UniversalConnector[],
   steps: UniversalStep[],
-  targetStepIndex: number
+  targetStepIndex: number,
+  isPlaying: boolean = false
 ): EvaluatedStepScene {
   const nodeStates: Record<string, EvaluatedNodeState> = {}
   const edgeStates: Record<string, EvaluatedEdgeState> = {}
 
   const activeStep = steps[targetStepIndex] || steps[0]
 
-  if (!activeStep) {
+  if (!activeStep || !isPlaying) {
     return {
       nodeStates,
       edgeStates,
-      activeStepLabel: "",
-      activeStepDescription: "",
-      stepDuration: 2.0,
-      hasInteraction: false,
+      activeStepLabel: activeStep?.label || "",
+      activeStepDescription: activeStep?.description || "",
+      stepDuration: activeStep?.duration || 2.0,
+      hasInteraction: Boolean(activeStep?.interaction),
     }
   }
 
@@ -67,11 +68,11 @@ export function evaluateStepScene(
   const actions: UniversalAction[] = activeStep.actions || []
 
   for (const act of actions) {
-    const targetNodeId = act.targetId || act.fromId
-    const targetEdgeId = act.connectorId || act.targetId
+    const targetNodeId = act.targetId || (act.type !== "packet" ? act.fromId : undefined)
+    const targetEdgeId = act.connectorId || (act.type === "packet" ? undefined : act.targetId)
 
     // ── Actions applied to Nodes ─────────────────────────────────
-    if (targetNodeId) {
+    if (targetNodeId && act.type !== "packet") {
       if (!nodeStates[targetNodeId]) {
         nodeStates[targetNodeId] = {}
       }

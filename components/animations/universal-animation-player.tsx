@@ -8,11 +8,16 @@ import { InteractionOverlay } from "./interaction-overlay"
 import { InteractionRuntime } from "@/lib/animations/interaction-runtime"
 import {
   compileUniversalTimeline,
-  calculateConnectorPath,
   type UniversalPaletteColors,
 } from "@/lib/animations/universal-compiler"
+import {
+  getOptimalAnchorPair,
+  computeConnectorPathData,
+} from "@/lib/animations/connector-geometry"
+import { evaluateStepScene } from "@/lib/animations/live-step-evaluator"
 import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
 import { UniversalNodeView } from "@/components/animations/visual/universal-node-view"
+import { PacketParticleOverlay } from "@/components/builder/packet-particle-overlay"
 import type {
   UniversalAnimationData,
   UniversalNode,
@@ -28,14 +33,21 @@ const VB = { w: 1280, h: 720 }
 
 export function UniversalAnimationPlayer({ animation, className }: UniversalAnimationPlayerProps) {
   const svgRef = useRef<SVGSVGElement>(null)
-  const { registerTimeline } = useAnimationContext()
+  const { registerTimeline, currentStep, isPlaying, progress } = useAnimationContext()
   const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [selectedNode, setSelectedNode] = useState<UniversalNode | null>(null)
   const runtimeRef = useRef<InteractionRuntime>(new InteractionRuntime())
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isLight = !mounted || resolvedTheme !== "dark"
+
   const C: UniversalPaletteColors = useMemo(
     () =>
-      resolvedTheme === "light"
+      isLight
         ? {
             idle: "#94A3B8",
             active: "#2563EB",
@@ -67,30 +79,33 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
     [resolvedTheme]
   )
 
+  const nodes = useMemo(() => animation?.nodes || [], [animation?.nodes])
+  const steps = useMemo(() => animation?.steps || [], [animation?.steps])
+
   const nodeMap = useMemo(() => {
-    return new Map(animation.nodes.map((n) => [n.id, n]))
-  }, [animation.nodes])
+    return new Map(nodes.map((n) => [n.id, n]))
+  }, [nodes])
 
   // Separate container nodes from foreground nodes
   const containerNodes = useMemo(() => {
-    return animation.nodes.filter((n) => n.type === "container")
-  }, [animation.nodes])
+    return nodes.filter((n) => n.type === "container")
+  }, [nodes])
 
   const foregroundNodes = useMemo(() => {
-    return animation.nodes
+    return nodes
       .filter((n) => n.type !== "container")
       .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-  }, [animation.nodes])
+  }, [nodes])
 
   const allActions = useMemo(() => {
-    return animation.steps.flatMap((s) => s.actions)
-  }, [animation.steps])
+    return steps.flatMap((s) => s.actions || [])
+  }, [steps])
 
   const connectors: UniversalConnector[] = useMemo(() => {
-    if (animation.connectors && animation.connectors.length > 0) {
+    if (animation?.connectors && animation.connectors.length > 0) {
       return animation.connectors
     }
-    if (animation.links && animation.links.length > 0) {
+    if (animation?.links && animation.links.length > 0) {
       return animation.links.map((link) => ({
         id: link.id,
         sourceId: link.source,
@@ -104,20 +119,74 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
     return []
   }, [animation.connectors, animation.links])
 
+  // Live evaluated scene for the active step in the player (1:1 identical to Studio)
+  const evaluatedScene = useMemo(() => {
+    return evaluateStepScene(
+      nodes,
+      connectors,
+      steps,
+      currentStep,
+      isPlaying
+    )
+  }, [nodes, connectors, steps, currentStep, isPlaying])
+
   // Compile GSAP timeline using compiled universal engine
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
 
-    const tl = compileUniversalTimeline(svg, animation.steps, animation.nodes, connectors, C)
+    const q = gsap.utils.selector(svg)
+    const tl = compileUniversalTimeline(animation, q, C)
     registerTimeline(tl)
 
     return () => {
       tl.kill()
     }
-  }, [animation, connectors, registerTimeline, C])
+  }, [animation, registerTimeline, C])
 
-  const isLight = resolvedTheme === "light"
+  const dynamicViewBox = useMemo(() => {
+    if (nodes.length === 0) return "0 0 1280 720"
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const n of nodes) {
+      const w = n.width || (n.type === "shape" && n.shapeDetails?.shapeType === "circle" ? 80 : 120)
+      const h = n.height || (n.type === "shape" && n.shapeDetails?.shapeType === "circle" ? 80 : 70)
+      minX = Math.min(minX, n.x)
+      minY = Math.min(minY, n.y)
+      maxX = Math.max(maxX, n.x + w)
+      maxY = Math.max(maxY, n.y + h)
+    }
+
+    for (const c of connectors) {
+      const src = nodeMap.get(c.sourceId)
+      const tgt = nodeMap.get(c.targetId)
+      if (src && tgt) {
+        minX = Math.min(minX, src.x, tgt.x)
+        minY = Math.min(minY, src.y, tgt.y)
+        maxX = Math.max(maxX, src.x + 100, tgt.x + 100)
+        maxY = Math.max(maxY, src.y + 60, tgt.y + 60)
+      }
+    }
+
+    const padding = 100
+    const rawW = maxX - minX + padding * 2
+    const rawH = maxY - minY + padding * 2
+
+    const w = Math.max(900, rawW)
+    const h = Math.max(550, rawH)
+
+    const cx = (minX + maxX) / 2
+    const cy = (minY + maxY) / 2
+    const x = cx - w / 2
+    const y = cy - h / 2
+
+    return `${Math.round(x)} ${Math.round(y)} ${Math.round(w)} ${Math.round(h)}`
+  }, [nodes, connectors, nodeMap])
+
   const bgStyle = getBackgroundInlineStyle(animation.background, isLight ? "light" : "dark")
   const patternBg = getPatternSvgPattern(animation.background?.pattern, !isLight)
 
@@ -134,7 +203,8 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
       )}
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${VB.w} ${VB.h}`}
+        viewBox={dynamicViewBox}
+        preserveAspectRatio="xMidYMid meet"
         className="relative z-10 h-full w-full overflow-visible"
         aria-label={`Visualización interactiva: ${animation.title}`}
         role="img"
@@ -177,7 +247,10 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
                 height={h}
                 className="overflow-visible pointer-events-none"
               >
-                <UniversalNodeView node={node} />
+                <UniversalNodeView
+                  node={node}
+                  evaluatedState={evaluatedScene.nodeStates[node.id]}
+                />
               </foreignObject>
             )
           })}
@@ -190,7 +263,12 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
             const tgt = nodeMap.get(conn.targetId)
             if (!src || !tgt) return null
 
-            const { d, midX, midY } = calculateConnectorPath(src, tgt, conn.type || "bezier")
+            const { sourcePoint, targetPoint } = getOptimalAnchorPair(src, tgt)
+            const { pathData, midPoint } = computeConnectorPathData(
+              sourcePoint,
+              targetPoint,
+              conn.type || "bezier"
+            )
             const strokeColor = conn.color || C.idle
             const strokeWidth = conn.strokeWidth || 2
 
@@ -207,7 +285,7 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
               <g key={conn.id} id={`connector-${conn.id}`} className="transition-opacity duration-300">
                 <path
                   id={`connector-path-${conn.id}`}
-                  d={d}
+                  d={pathData}
                   fill="none"
                   stroke={strokeColor}
                   strokeWidth={strokeWidth}
@@ -217,7 +295,7 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
                   className="transition-colors duration-200"
                 />
                 {conn.label && (
-                  <g id={`connector-label-${conn.id}`} transform={`translate(${midX}, ${midY})`}>
+                  <g id={`connector-label-${conn.id}`} transform={`translate(${Math.round(midPoint.x)}, ${Math.round(midPoint.y)})`}>
                     <rect
                       x={-40}
                       y={-12}
@@ -258,37 +336,25 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
                 className="overflow-visible cursor-pointer"
                 onClick={() => setSelectedNode(node)}
               >
-                <UniversalNodeView node={node} />
+                <UniversalNodeView
+                  node={node}
+                  evaluatedState={evaluatedScene.nodeStates[node.id]}
+                  className="w-full h-full"
+                />
               </foreignObject>
             )
           })}
         </g>
-
-        {/* ── Dynamic Action Layers (Packets, Tooltips, Pulse Waves) ─ */}
-        <g id="layer-packets">
-          {allActions
-            .filter((a) => a.type === "packet")
-            .map((act) => (
-              <g
-                key={act.id}
-                id={`action-${act.id}`}
-                className="pointer-events-none opacity-0 transition-opacity"
-              >
-                <circle r={7} fill={act.color || C.active} className="drop-shadow-md" />
-                {act.text && (
-                  <text
-                    y={-12}
-                    textAnchor="middle"
-                    fill={C.fg}
-                    className="text-[10px] font-extrabold"
-                  >
-                    {act.text}
-                  </text>
-                )}
-              </g>
-            ))}
-        </g>
       </svg>
+
+      {/* ── Live Animated Packet Particle Layer ──────────────────── */}
+      <PacketParticleOverlay
+        step={steps[currentStep]}
+        universalNodes={nodes}
+        universalConnectors={connectors}
+        progress={progress}
+        isPlaying={isPlaying}
+      />
 
       {/* ── Native Interaction HUD & Quiz Overlay ──────────────────── */}
       <InteractionOverlay runtimeRef={runtimeRef} />
