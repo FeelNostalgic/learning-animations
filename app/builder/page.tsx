@@ -24,6 +24,7 @@ import {
   reactFlowToUniversal,
 } from "@/lib/animations/react-flow-adapter"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
   Save,
   Eye,
@@ -36,6 +37,7 @@ import {
   Lock,
   GraduationCap,
   Layers,
+  BookOpen,
 } from "lucide-react"
 import type {
   UniversalAnimationData,
@@ -594,6 +596,7 @@ function BuilderContent() {
               <span className="hidden lg:inline">{statusMessage.text}</span>
             </div>
           )}
+
 
           {/* New Animation Button */}
           <Button
