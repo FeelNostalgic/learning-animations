@@ -1,51 +1,39 @@
-import Link from "next/link"
 import { animationRegistry } from "@/lib/animations/registry"
-import { Network } from "lucide-react"
+import { getPublicAnimations } from "@/app/builder/actions"
+import { FacetedCatalog } from "@/components/catalog/faceted-catalog"
+import { Sparkles } from "lucide-react"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Animaciones",
+  title: "Catálogo de Animaciones Educativas",
+  description: "Explora animaciones interactivas paso a paso de redes, matemáticas, física y computación.",
 }
 
-export default function AnimationsIndexPage() {
+export default async function AnimationsIndexPage() {
+  const communityRes = await getPublicAnimations()
+  const communityAnimations = communityRes.data || []
+
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Animaciones educativas</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Visualiza conceptos de redes paso a paso antes de trabajar en el simulador.
+    <div className="mx-auto w-full max-w-7xl px-4 py-8 space-y-8 select-none">
+      {/* ── Header ──────────────────────────────────────────────── */}
+      <div className="space-y-1.5">
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary shadow-xs">
+          <Sparkles className="size-3.5" />
+          <span>Catálogo Abierto de Animaciones Educativas</span>
+        </div>
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
+          Aprende Conceptos Complejos Paso a Paso
+        </h1>
+        <p className="text-xs md:text-sm text-muted-foreground max-w-2xl leading-relaxed">
+          Explora la colección oficial y las animaciones interactivas publicadas por la comunidad sobre redes, telecomunicaciones, matemáticas y ciencias.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {animationRegistry.map((anim) => (
-          <Link
-            key={anim.slug}
-            href={`/animations/${anim.slug}`}
-            className="group flex flex-col gap-3 rounded-lg border border-border/50 bg-card p-5 hover:border-primary/50 hover:bg-card/80 transition-all duration-200"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-primary uppercase tracking-wider">
-                {anim.topic}
-              </span>
-              <Network className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                {anim.title}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                {anim.description}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border/50">
-              <span className="text-xs text-muted-foreground">
-                {anim.steps.length} pasos
-              </span>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {/* ── Faceted Search & Filter Catalog ─────────────────────── */}
+      <FacetedCatalog
+        officialItems={animationRegistry}
+        communityItems={communityAnimations}
+      />
     </div>
   )
 }

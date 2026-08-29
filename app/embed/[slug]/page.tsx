@@ -3,7 +3,7 @@ import { animationComponentMap } from "@/components/animations/animation-compone
 import { animationRegistry } from "@/lib/animations/registry"
 import { getAnimationById } from "@/app/builder/actions"
 import { AnimationPlayer } from "@/components/animations/animation-player"
-import { DynamicAnimationPlayer } from "@/components/animations/dynamic-animation-player"
+import { UniversalAnimationPlayer } from "@/components/animations/universal-animation-player"
 import { Metadata } from "next"
 
 export async function generateMetadata({
@@ -57,7 +57,7 @@ export default async function UnifiedEmbedPage({
       <div className="h-screen w-screen p-2 flex flex-col overflow-hidden bg-background">
         <div className="flex-1 h-full w-full">
           <AnimationPlayer steps={dynamicAnim.steps} title={dynamicAnim.title}>
-            <DynamicAnimationPlayer animation={dynamicAnim} />
+            <UniversalAnimationPlayer animation={dynamicAnim} />
           </AnimationPlayer>
         </div>
       </div>

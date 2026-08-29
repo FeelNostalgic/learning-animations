@@ -306,3 +306,52 @@ export async function deleteAnimation(id: string): Promise<{ success: boolean; e
     return { success: false, error: err.message || "Error al eliminar la animación" }
   }
 }
+
+/**
+ * Retrieves all publicly shared animations from the community.
+ */
+export async function getPublicAnimations(): Promise<{
+  success: boolean
+  data?: UniversalAnimationData[]
+  error?: string
+}> {
+  try {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+      .from("animations")
+      .select("*")
+      .eq("is_public", true)
+      .order("updated_at", { ascending: false })
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return {
+      success: true,
+      data: (data || []).map((item) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description || "",
+        discipline: item.discipline || "general",
+        topic: item.topic,
+        tags: item.tags || [],
+        difficulty: item.difficulty || "beginner",
+        is_public: true,
+        nodes: (item.nodes || []) as any,
+        connectors: (item.connectors || item.links || []) as any,
+        steps: (item.steps || []) as any,
+        user_id: item.user_id,
+        views_count: item.views_count || 0,
+        likes_count: item.likes_count || 0,
+        forked_from: item.forked_from,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+      })),
+    }
+  } catch (err: any) {
+    return { success: false, error: err.message || "Error al obtener animaciones públicas" }
+  }
+}
+
