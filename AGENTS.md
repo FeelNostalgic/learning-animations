@@ -63,6 +63,7 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | Accessibility Best Practices | `~/.agents/skills/accessibility/SKILL.md` |
 | Seo Best Practices | `~/.agents/skills/seo/SKILL.md` |
 | Shadcn UI Components | `~/.agents/skills/josechifflet/SKILL.md` |
+| CI status, GitHub Actions, auto-pull | `.agents/skills/ci-sync/SKILL.md`, `.agents/agents/ci-sync.md` |
 | GSAP animations, framework, performance, plugins, timeline, scrolltrigger, utils | `~/.agents/skills/gsap-frameworks/SKILL.md`,  `~/.agents/skills/gsap-performance/SKILL.md`, `~/.agents/skills/gsap-plugins/SKILL.md`, `~/.agents/skills/gsap-react/SKILL.md`, `~/.agents/skills/gsap-scrolltrigger/SKILL.md`, `~/.agents/skills/gsap-timeline/SKILL.md`, `~/.agents/skills/gsap-utils/SKILL.md`|
 
 

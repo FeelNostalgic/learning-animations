@@ -1,6 +1,6 @@
 {
   "name": "learning-animations",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Educational Interactive Network Animations",
   "type": "module",
   "scripts": {
@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ci:sync": "node scripts/ci-sync.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",
