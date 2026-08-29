@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Compass, Layers, PenTool, Network, Sparkles } from "lucide-react"
+import { Compass, Layers, PenTool, Network, Sparkles, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { type User } from "@supabase/supabase-js"
@@ -29,7 +29,7 @@ const NAV_ITEMS: NavItem[] = [
     matchPath: (p) => p === "/my-animations" || p.startsWith("/my-animations/"),
   },
   {
-    label: "Editor",
+    label: "Editor Studio",
     href: "/builder",
     icon: PenTool,
     matchPath: (p) => p === "/builder" || p.startsWith("/builder/"),

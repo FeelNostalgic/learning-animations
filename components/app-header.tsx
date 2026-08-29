@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight, User as UserIcon, LogOut, LogIn, UserPlus, Sparkles } from "lucide-react"
+import { ChevronRight, User as UserIcon, LogOut, LogIn, UserPlus, Sparkles, BookOpen } from "lucide-react"
 import { animationRegistry } from "@/lib/animations/registry"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { createClient } from "@/lib/supabase/client"
@@ -78,6 +78,7 @@ export function AppHeader() {
   const isMyAnimationDetail = pathname.startsWith("/my-animations/") && pathname !== "/my-animations"
   const isMyAnimationsIndex = pathname === "/my-animations"
   const isBuilder = pathname.startsWith("/builder")
+  const isDocs = pathname.startsWith("/docs")
 
   const officialSlug = isOfficialDetail ? pathname.split("/")[2] : null
   const officialAnim = officialSlug
@@ -94,10 +95,12 @@ export function AppHeader() {
     breadcrumbs.push({ label: "Mis Animaciones", href: "/my-animations" })
     breadcrumbs.push({ label: dynamicTitle || "Cargando animación..." })
   } else if (isBuilder) {
-    breadcrumbs.push({ label: "Editor" })
+    breadcrumbs.push({ label: "Editor Studio" })
     if (dynamicTitle && dynamicTitle !== "Nueva Animación de Red") {
       breadcrumbs.push({ label: dynamicTitle })
     }
+  } else if (isDocs) {
+    breadcrumbs.push({ label: "Showcase & Wiki" })
   }
 
   return (
@@ -131,6 +134,15 @@ export function AppHeader() {
 
       {/* ── Right Utilities ─────────────────────────────────────── */}
       <div className="flex items-center gap-2">
+        <Link
+          href="/docs/showcase"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card/80 px-2.5 py-1.5 text-xs font-semibold text-foreground hover:border-primary/50 hover:bg-accent/50 transition-all cursor-pointer shadow-xs"
+          title="Ver Wiki & Showcase de componentes y animaciones"
+        >
+          <BookOpen className="h-3.5 w-3.5 text-primary" />
+          <span className="hidden sm:inline">Wiki / Docs</span>
+        </Link>
+
         <ThemeToggle />
 
         {user ? (
