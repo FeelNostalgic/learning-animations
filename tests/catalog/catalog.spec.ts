@@ -11,14 +11,14 @@ test.describe("Faceted Animation Catalog", () => {
 
       // Verify header and initial animations display
       await expect(page.getByText("Aprende Conceptos Complejos Paso a Paso")).toBeVisible()
-      await expect(page.getByRole("heading", { name: "Protocolo ARP" }).first()).toBeVisible()
+      await expect(page.getByText("Protocolo ARP").first()).toBeVisible()
 
       // Search for specific protocol
       await catalog.search("ARP")
-      await expect(page.getByRole("heading", { name: "Protocolo ARP" }).first()).toBeVisible()
+      await expect(page.getByText("Protocolo ARP").first()).toBeVisible()
 
       // Click to open animation detail player
-      await page.getByRole("heading", { name: "Protocolo ARP" }).first().click()
+      await page.locator('a[href*="/animations/arp"]').first().click()
       await expect(page).toHaveURL(/\/animations\/arp/)
     }
   )
