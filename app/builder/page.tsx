@@ -16,6 +16,7 @@ import { AssetsSidebar } from "@/components/builder/assets-sidebar"
 import { Canvas } from "@/components/builder/canvas"
 import { TimelineBottomBar } from "@/components/builder/timeline-bottom-bar"
 import { StepInspector } from "@/components/builder/step-inspector"
+import { BackgroundInspectorDialog } from "@/components/builder/background-inspector-dialog"
 import { AnimationPlayer } from "@/components/animations/animation-player"
 import { UniversalAnimationPlayer } from "@/components/animations/universal-animation-player"
 import { saveAnimation, getAnimationById } from "@/app/builder/actions"
@@ -47,6 +48,7 @@ import type {
   UniversalNodeType,
   DisciplineType,
   DifficultyLevel,
+  AnimationBackground,
 } from "@/types/universal-animation"
 
 const DISCIPLINES: { key: DisciplineType; label: string }[] = [
@@ -159,6 +161,9 @@ function BuilderContent() {
   const [description, setDescription] = useState(INITIAL_UNIVERSAL_ANIMATION.description)
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(INITIAL_UNIVERSAL_ANIMATION.difficulty)
   const [isPublic, setIsPublic] = useState(INITIAL_UNIVERSAL_ANIMATION.is_public)
+  const [background, setBackground] = useState<AnimationBackground | undefined>(
+    INITIAL_UNIVERSAL_ANIMATION.background
+  )
   const [steps, setSteps] = useState<UniversalStep[]>(INITIAL_UNIVERSAL_ANIMATION.steps)
 
   // React Flow State
@@ -217,6 +222,7 @@ function BuilderContent() {
         setDescription(anim.description || "")
         setDifficulty(anim.difficulty || "beginner")
         setIsPublic(anim.is_public ?? false)
+        setBackground(anim.background)
         setSteps(anim.steps || [])
 
         const rf = universalToReactFlow(anim)
@@ -242,6 +248,7 @@ function BuilderContent() {
     setDescription("Descripción pedagógica...")
     setDifficulty("beginner")
     setIsPublic(false)
+    setBackground(undefined)
     setSteps(INITIAL_UNIVERSAL_ANIMATION.steps)
 
     const rf = universalToReactFlow(INITIAL_UNIVERSAL_ANIMATION)
@@ -457,6 +464,7 @@ function BuilderContent() {
     tags,
     difficulty,
     is_public: isPublic,
+    background,
   })
 
   // Save Animation to Supabase
@@ -602,6 +610,12 @@ function BuilderContent() {
             <span className="hidden sm:inline">Nueva</span>
           </Button>
 
+          {/* Background Customizer Dialog */}
+          <BackgroundInspectorDialog
+            background={background}
+            onUpdateBackground={setBackground}
+          />
+
           {/* Preview Toggle */}
           <Button
             variant="outline"
@@ -658,6 +672,7 @@ function BuilderContent() {
               selectedEdgeId={selectedEdgeId}
               selectedNode={selectedUniversalNode}
               selectedEdge={selectedEdge}
+              background={background}
               onSelectNode={(id) => {
                 setSelectedNodeId(id)
                 if (id) setSelectedEdgeId(null)

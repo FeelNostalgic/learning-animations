@@ -175,6 +175,20 @@ export interface UniversalStep {
   interaction?: UniversalInteraction
 }
 
+export interface AnimationBackground {
+  type: "solid" | "gradient" | "image"
+  color?: string // Hex, rgba, or CSS color value
+  gradient?: {
+    from: string
+    to: string
+    direction?: "to-r" | "to-b" | "to-br" | "radial"
+  }
+  imageUrl?: string // Cloudflare R2 or web image URL / Data-URI
+  imageFit?: "cover" | "contain" | "repeat" | "center"
+  opacity?: number // 0 to 1 for overlay blending
+  pattern?: "none" | "grid" | "dots" | "cross" // Subtle decorative background pattern
+}
+
 export interface UniversalAnimationData {
   id?: string
   title: string
@@ -184,6 +198,7 @@ export interface UniversalAnimationData {
   tags: string[]
   difficulty: DifficultyLevel
   is_public: boolean
+  background?: AnimationBackground
   nodes: UniversalNode[]
   connectors: UniversalConnector[]
   steps: UniversalStep[]

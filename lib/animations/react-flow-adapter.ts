@@ -18,6 +18,7 @@ export interface ReactFlowConversionMeta {
   tags?: string[]
   difficulty?: DifficultyLevel
   is_public?: boolean
+  background?: AnimationBackground
   user_id?: string
 }
 
@@ -173,6 +174,7 @@ export function reactFlowToUniversal(
     tags: meta.tags || [],
     difficulty: meta.difficulty || "beginner",
     is_public: meta.is_public ?? false,
+    background: meta.background,
     nodes: universalNodes,
     connectors: universalConnectors,
     steps: steps || [],

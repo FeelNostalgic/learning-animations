@@ -29,7 +29,8 @@ import {
   Copy,
   Trash2,
 } from "lucide-react"
-import type { UniversalNode } from "@/types/universal-animation"
+import type { UniversalNode, AnimationBackground } from "@/types/universal-animation"
+import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
 
 interface ContextMenuState {
   x: number
@@ -47,6 +48,7 @@ interface CanvasProps {
   selectedEdgeId: string | null
   selectedNode: UniversalNode | null
   selectedEdge: Edge | null
+  background?: AnimationBackground
   onSelectNode: (nodeId: string | null) => void
   onSelectEdge: (edgeId: string | null) => void
   onUpdateNode?: (node: UniversalNode) => void
@@ -67,6 +69,7 @@ export function Canvas({
   selectedEdgeId,
   selectedNode,
   selectedEdge,
+  background,
   onSelectNode,
   onSelectEdge,
   onUpdateNode,
@@ -79,6 +82,9 @@ export function Canvas({
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+
+  const bgStyle = getBackgroundInlineStyle(background, isDark ? "dark" : "light")
+  const patternBg = getPatternSvgPattern(background?.pattern, isDark)
 
   const handleNodeClick: NodeMouseHandler = useCallback(
     (_, node) => {
@@ -178,14 +184,18 @@ export function Canvas({
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.2}
         maxZoom={2.5}
-        className="h-full w-full"
+        className="h-full w-full transition-colors duration-300"
+        style={bgStyle}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1.5}
-          color={isDark ? "#334155" : "#CBD5E1"}
-        />
+        {/* If no custom pattern is selected, use React Flow's default dots, otherwise render custom pattern */}
+        {background?.pattern && background.pattern !== "none" ? null : (
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={20}
+            size={1.5}
+            color={isDark ? "#334155" : "#CBD5E1"}
+          />
+        )}
         <Controls
           showInteractive={false}
           className="!bg-card/90 !border-border !shadow-md !rounded-xl overflow-hidden"
