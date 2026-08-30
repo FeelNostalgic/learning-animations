@@ -48,7 +48,8 @@ metadata:
 | `chore` | **patch** | Dependencies, maintenance |
 | `perf` | **patch** | Performance improvements |
 | `build` | **patch** | Build system changes |
-| `skill` | **patch** | Agent skill changes, new skills, or updates to existing skills |
+| `ai` | **minor** | Agent skill changes, new skills, or updates to existing skills |
+| `wip` | **no bump** | Work in progress |
 
 ### Breaking Changes (Major Bump)
 
@@ -91,6 +92,7 @@ Is it dependency updates?                 → chore:
 Is it a performance improvement?          → perf:
 Does it change the build system?          → build:
 Is it an ai agent/mcp configuration change? → ai:
+Is it a work in progress?                 → wip:
 None of the above?                        → No prefix (no version bump)
 ```
 
@@ -112,6 +114,7 @@ chore: update dependencies
 perf: lazy-load dashboard charts
 build: update next.config for turbopack
 ai: update ai agent skills, mcp configs, settings, opencode.json, AGENTS.md
+wip: update work in progress
 ```
 
 ### Minor commits

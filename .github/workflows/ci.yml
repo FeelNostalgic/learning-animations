@@ -107,8 +107,10 @@ jobs:
             BUMP_TYPE="major"
           elif echo "$COMMIT_MSG" | grep -Eq '^feat(\([a-z0-9_-]+\))?:'; then
             BUMP_TYPE="minor"
-          elif echo "$COMMIT_MSG" | grep -Eq '^(fix|refactor|perf|style|docs|test|ci|chore|build|skill)(\([a-z0-9_-]+\))?:'; then
+          elif echo "$COMMIT_MSG" | grep -Eq '^(fix|refactor|perf|style|docs|test|ci|chore|build|ai)(\([a-z0-9_-]+\))?:'; then
             BUMP_TYPE="patch"
+          elif echo "$COMMIT_MSG" | grep -Eq '^wip(\([a-z0-9_-]+\))?:'; then
+            BUMP_TYPE="none"
           fi
 
           echo "Determined bump type: $BUMP_TYPE"
@@ -126,9 +128,13 @@ jobs:
 
       - name: Merge into Main and Sync Dev
         run: |
-          git checkout main
-          git pull origin main
-          git merge dev --no-edit
-          git push origin main --tags
-          git checkout dev
-          git push origin dev
+          if [ "${{ steps.versioning.outputs.bump_type }}" != "none" ]; then
+            git checkout main
+            git pull origin main
+            git merge dev --no-edit
+            git push origin main --tags
+            git checkout dev
+            git push origin dev
+          else
+            echo "No changes to merge. Skipping merge."
+          fi
