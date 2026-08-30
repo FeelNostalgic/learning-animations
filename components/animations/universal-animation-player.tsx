@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, useMemo } from "react"
 import gsap from "gsap"
 import {
   ReactFlow,
+  ConnectionMode,
+  ViewportPortal,
+  useReactFlow,
   type Node as FlowNode,
   type Edge as FlowEdge,
 } from "@xyflow/react"
@@ -18,6 +21,7 @@ import {
 } from "@/lib/animations/universal-compiler"
 import { universalToReactFlow } from "@/lib/animations/react-flow-adapter"
 import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
+import { evaluateStepScene } from "@/lib/animations/live-step-evaluator"
 import { nodeTypes } from "@/components/builder/nodes"
 import { edgeTypes } from "@/components/builder/edges"
 import { PacketParticleOverlay } from "@/components/builder/packet-particle-overlay"
@@ -27,6 +31,34 @@ import type {
   UniversalConnector,
 } from "@/types/universal-animation"
 
+function ReactFlowZoomBridge() {
+  const { zoomIn, zoomOut, fitView } = useReactFlow()
+
+  useEffect(() => {
+    const handleZoomAction = (e: CustomEvent<{ action: "in" | "out" | "reset" }>) => {
+      if (e.detail?.action === "in") zoomIn({ duration: 250 })
+      else if (e.detail?.action === "out") zoomOut({ duration: 250 })
+      else if (e.detail?.action === "reset") fitView({ duration: 300, padding: 0.15 })
+    }
+
+    const handleFullscreenTransition = () => {
+      setTimeout(() => {
+        fitView({ duration: 200, padding: 0.15 })
+      }, 100)
+    }
+
+    window.addEventListener("player-zoom-action", handleZoomAction as EventListener)
+    document.addEventListener("fullscreenchange", handleFullscreenTransition)
+
+    return () => {
+      window.removeEventListener("player-zoom-action", handleZoomAction as EventListener)
+      document.removeEventListener("fullscreenchange", handleFullscreenTransition)
+    }
+  }, [zoomIn, zoomOut, fitView])
+
+  return null
+}
+
 interface UniversalAnimationPlayerProps {
   animation: UniversalAnimationData
   className?: string
@@ -34,7 +66,7 @@ interface UniversalAnimationPlayerProps {
 
 export function UniversalAnimationPlayer({ animation, className }: UniversalAnimationPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { registerTimeline, currentStep, isPlaying, progress } = useAnimationContext()
+  const { registerTimeline, currentStep, isPlaying, progress, stepProgress } = useAnimationContext()
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [selectedNode, setSelectedNode] = useState<UniversalNode | null>(null)
@@ -88,10 +120,51 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
     return new Map(nodes.map((n) => [n.id, n]))
   }, [nodes])
 
-  // Convert Universal domain structure to React Flow nodes and edges
+  // Convert Universal domain structure to React Flow nodes and edges in read-only player mode
   const { nodes: flowNodes, edges: flowEdges } = useMemo(() => {
-    return universalToReactFlow(animation)
+    return universalToReactFlow(animation, { isReadOnly: true })
   }, [animation])
+
+  // Live evaluated scene for the active step
+  const evaluatedScene = useMemo(() => {
+    return evaluateStepScene(nodes, connectors, steps, currentStep, isPlaying)
+  }, [nodes, connectors, steps, currentStep, isPlaying])
+
+  const liveFlowNodes: FlowNode[] = useMemo(() => {
+    return flowNodes.map((n) => {
+      const nState = evaluatedScene.nodeStates[n.id]
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          evaluatedState: nState,
+        },
+      }
+    })
+  }, [flowNodes, evaluatedScene.nodeStates])
+
+  const liveFlowEdges: FlowEdge[] = useMemo(() => {
+    return flowEdges.map((e) => {
+      const eState = evaluatedScene.edgeStates[e.id]
+      if (!eState) return e
+      const strokeColor =
+        eState.highlightColor === "active" ? "var(--primary)" : eState.packetColor || e.style?.stroke
+
+      return {
+        ...e,
+        animated: eState.isAnimated !== undefined ? eState.isAnimated : e.animated,
+        label: eState.packetLabel ? `📦 ${eState.packetLabel}` : e.label,
+        style: {
+          ...e.style,
+          stroke: strokeColor,
+          strokeWidth:
+            (eState.strokeWidth ||
+              (typeof e.style?.strokeWidth === "number" ? e.style.strokeWidth : 2)) +
+            (eState.highlightColor ? 1 : 0),
+        },
+      }
+    })
+  }, [flowEdges, evaluatedScene.edgeStates])
 
   // Compile unified GSAP timeline targeting live DOM/React Flow elements
   useEffect(() => {
@@ -110,10 +183,42 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
   const bgStyle = getBackgroundInlineStyle(animation.background, isLight ? "light" : "dark")
   const patternBg = getPatternSvgPattern(animation.background?.pattern, !isLight)
 
+  // Calculate strict bounding box extent to prevent panning into the void
+  const translateExtent = useMemo(() => {
+    if (!nodes || nodes.length === 0) {
+      return [
+        [-1500, -1500],
+        [3000, 3000],
+      ] as [[number, number], [number, number]]
+    }
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    nodes.forEach((n) => {
+      const w = n.width || 120
+      const h = n.height || 80
+      if (n.x < minX) minX = n.x
+      if (n.y < minY) minY = n.y
+      if (n.x + w > maxX) maxX = n.x + w
+      if (n.y + h > maxY) maxY = n.y + h
+    })
+
+    const paddingX = Math.max(400, (maxX - minX) * 0.6)
+    const paddingY = Math.max(300, (maxY - minY) * 0.6)
+
+    return [
+      [minX - paddingX, minY - paddingY],
+      [maxX + paddingX, maxY + paddingY],
+    ] as [[number, number], [number, number]]
+  }, [nodes])
+
   return (
     <div
       ref={containerRef}
-      className={`relative h-full w-full select-none overflow-hidden transition-colors duration-300 ${className || ""}`}
+      className={`relative h-full w-full select-none overflow-hidden transition-colors duration-300 [&_.react-flow__handle]:!hidden [&_.react-flow__handle]:!opacity-0 [&_.react-flow__handle]:!pointer-events-none ${className || ""}`}
       style={bgStyle}
     >
       {patternBg && (
@@ -126,35 +231,50 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
       {/* ── Unified React Flow Host (Read-Only / 1:1 Parity Mode) ──── */}
       <div className="relative z-10 h-full w-full">
         <ReactFlow
-          nodes={flowNodes}
-          edges={flowEdges}
+          nodes={liveFlowNodes}
+          edges={liveFlowEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
+          connectionMode={ConnectionMode.Loose}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}
-          panOnDrag={false}
-          zoomOnScroll={false}
-          preventScrolling={false}
+          panOnDrag={true}
+          zoomOnScroll={true}
+          zoomOnPinch={true}
+          preventScrolling={true}
+          minZoom={0.2}
+          maxZoom={3.0}
+          translateExtent={translateExtent}
           fitView
           fitViewOptions={{ padding: 0.15 }}
           proOptions={{ hideAttribution: true }}
-          className="h-full w-full pointer-events-auto"
+          className="h-full w-full pointer-events-auto [&_.react-flow__handle]:!hidden [&_.react-flow__handle]:!opacity-0 [&_.react-flow__handle]:!pointer-events-none [&_.react-flow__pane]:!cursor-default [&_.react-flow__pane.dragging]:!cursor-grabbing"
+          onMove={(_, viewport) => {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("player-zoom-synced", { detail: { zoom: viewport.zoom } })
+              )
+            }
+          }}
           onNodeClick={(_, flowNode) => {
             const rawNode = nodeMap.get(flowNode.id)
             if (rawNode) setSelectedNode(rawNode)
           }}
-        />
+        >
+          <ReactFlowZoomBridge />
+          {/* ── Live Animated Packet Particle Layer Inside Viewport ── */}
+          <ViewportPortal>
+            <PacketParticleOverlay
+              step={steps[currentStep]}
+              universalNodes={nodes}
+              universalConnectors={connectors}
+              progress={stepProgress}
+              isPlaying={isPlaying}
+            />
+          </ViewportPortal>
+        </ReactFlow>
       </div>
-
-      {/* ── Live Animated Packet Particle Layer ──────────────────── */}
-      <PacketParticleOverlay
-        step={steps[currentStep]}
-        universalNodes={nodes}
-        universalConnectors={connectors}
-        progress={progress}
-        isPlaying={isPlaying}
-      />
 
       {/* ── Native Interaction HUD & Quiz Overlay ──────────────────── */}
       {steps[currentStep]?.interaction && (

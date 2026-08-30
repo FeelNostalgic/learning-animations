@@ -5,6 +5,8 @@ import type { Node, Edge } from "@xyflow/react"
 import type { UniversalStep, UniversalNode, UniversalConnector } from "@/types/universal-animation"
 import { computeConnectorPathData, getOptimalAnchorPair } from "@/lib/animations/connector-geometry"
 
+import { sampleConnectorPoints } from "@/lib/animations/universal-compiler"
+
 interface PacketParticleOverlayProps {
   step?: UniversalStep
   nodes?: Node[]
@@ -87,27 +89,14 @@ export function PacketParticleOverlay({
         const { sourcePoint, targetPoint } = getOptimalAnchorPair(srcNode, tgtNode)
         const connType = conn.type || "bezier"
 
-        // Interpolate position along the bezier/straight curve with t = progress
+        // Sample exact waypoints along the connector curve
+        const waypoints = sampleConnectorPoints(sourcePoint, targetPoint, connType as any, 100)
         const t = Math.max(0, Math.min(1, progress))
-        let posX = 0
-        let posY = 0
-
-        if (connType === "straight") {
-          posX = sourcePoint.x + (targetPoint.x - sourcePoint.x) * t
-          posY = sourcePoint.y + (targetPoint.y - sourcePoint.y) * t
-        } else {
-          // Cubic Bezier interpolation
-          const dx = targetPoint.x - sourcePoint.x
-          const curvature = 0.4
-          const cx1 = sourcePoint.x + Math.max(Math.abs(dx) * curvature, 40) * Math.sign(dx || 1)
-          const cy1 = sourcePoint.y
-          const cx2 = targetPoint.x - Math.max(Math.abs(dx) * curvature, 40) * Math.sign(dx || 1)
-          const cy2 = targetPoint.y
-
-          const u = 1 - t
-          posX = u * u * u * sourcePoint.x + 3 * u * u * t * cx1 + 3 * u * t * t * cx2 + t * t * t * targetPoint.x
-          posY = u * u * u * sourcePoint.y + 3 * u * u * t * cy1 + 3 * u * t * t * cy2 + t * t * t * targetPoint.y
-        }
+        const waypointIdx = Math.min(
+          waypoints.length - 1,
+          Math.max(0, Math.round(t * (waypoints.length - 1)))
+        )
+        const coord = waypoints[waypointIdx] || sourcePoint
 
         const packetColor = act.color || "#3B82F6"
 
@@ -116,8 +105,8 @@ export function PacketParticleOverlay({
             key={act.id}
             className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold text-white shadow-2xl transition-transform duration-75 border border-white/30"
             style={{
-              left: `${Math.round(posX)}px`,
-              top: `${Math.round(posY)}px`,
+              left: `${coord.x}px`,
+              top: `${coord.y}px`,
               backgroundColor: packetColor,
             }}
           >

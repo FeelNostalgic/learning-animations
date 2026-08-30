@@ -278,6 +278,34 @@ function BuilderContent() {
         const rf = universalToReactFlow(anim)
         setNodes(rf.nodes)
         setEdges(rf.edges)
+        setSavedHash(
+          JSON.stringify({
+            title: anim.title,
+            description: anim.description || "",
+            discipline: anim.discipline || "general",
+            topic: anim.topic,
+            tags: anim.tags || [],
+            difficulty: anim.difficulty || "beginner",
+            isPublic: anim.is_public ?? false,
+            background: anim.background,
+            nodes: rf.nodes.map((n) => ({
+              id: n.id,
+              type: n.type,
+              position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+              style: { width: n.style?.width, height: n.style?.height },
+              data: n.data,
+            })),
+            edges: rf.edges.map((e) => ({
+              id: e.id,
+              source: e.source,
+              target: e.target,
+              type: e.type,
+              data: e.data,
+              style: e.style,
+            })),
+            steps: anim.steps || [],
+          })
+        )
       } else {
         toast.error("No se pudo cargar la animación", {
           description: "Verifica que el identificador sea correcto o que tengas permisos de acceso.",
@@ -291,6 +319,7 @@ function BuilderContent() {
   // Reset to brand new animation
   const handleNewAnimation = () => {
     setAnimationId(null)
+    setSavedHash("")
     setTitle("Nueva animación educativa")
     setDiscipline("general")
     setTopic("Tema personalizado")
@@ -567,6 +596,42 @@ function BuilderContent() {
     })
   }, [edges, evaluatedScene.edgeStates])
 
+  // Compute state serialization for precise dirty checking
+  const serializedState = useMemo(() => {
+    return JSON.stringify({
+      title,
+      description,
+      discipline,
+      topic,
+      tags,
+      difficulty,
+      isPublic,
+      background,
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        type: n.type,
+        position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        style: { width: n.style?.width, height: n.style?.height },
+        data: n.data,
+      })),
+      edges: edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        type: e.type,
+        data: e.data,
+        style: e.style,
+      })),
+      steps,
+    })
+  }, [title, description, discipline, topic, tags, difficulty, isPublic, background, nodes, edges, steps])
+
+  const [savedHash, setSavedHash] = useState<string>("")
+  const isDirty = useMemo(() => {
+    if (!savedHash) return true
+    return serializedState !== savedHash
+  }, [serializedState, savedHash])
+
   // Save Animation to Supabase
   const handleSave = async () => {
     setIsSaving(true)
@@ -575,6 +640,7 @@ function BuilderContent() {
     setIsSaving(false)
 
     if (res.success) {
+      setSavedHash(serializedState)
       if (res.id) setAnimationId(res.id)
       if (isPublic) {
         toast.success("¡Animación guardada y publicada!", {
@@ -720,16 +786,22 @@ function BuilderContent() {
           <Button
             size="sm"
             onClick={handleSave}
-            disabled={isSaving}
-            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer"
-            title="Guardar cambios en Supabase"
+            disabled={isSaving || (Boolean(animationId) && !isDirty)}
+            className="gap-1.5 text-xs h-7 font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              isSaving
+                ? "Guardando cambios..."
+                : animationId && !isDirty
+                ? "No hay cambios pendientes por guardar"
+                : "Guardar cambios en Supabase"
+            }
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            <span>{animationId ? "Actualizar" : "Guardar"}</span>
+            <span>{animationId ? (isDirty ? "Actualizar" : "Actualizado") : "Guardar"}</span>
           </Button>
         </div>
       </div>

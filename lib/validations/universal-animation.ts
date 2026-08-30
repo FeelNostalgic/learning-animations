@@ -196,7 +196,7 @@ export const animationBackgroundSchema = z.object({
 })
 
 export const universalAnimationSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().min(1).optional(),
   title: z.string().min(1, "El título es obligatorio").max(120),
   description: z.string().default(""),
   discipline: disciplineEnum.default("general"),

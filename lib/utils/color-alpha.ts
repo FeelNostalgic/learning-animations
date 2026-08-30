@@ -1,8 +1,8 @@
 /**
  * Converts a 6-character hex color code and alpha into an rgba CSS string.
+ * Preserves the exact RGB color components even when alpha is 0.
  */
 export function hexToRgba(hex: string, alpha: number): string {
-  if (alpha <= 0) return "transparent"
   const cleanHex = hex.replace("#", "")
 
   let r = 0,
@@ -36,14 +36,15 @@ export function rgbaToHex(r: number, g: number, b: number): string {
 
 /**
  * Parses any color string (hex, rgba, transparent) into base hex and alpha (0 to 1).
+ * Accepts an optional fallbackHex when parsing a legacy bare "transparent" string.
  */
-export function parseColorAlpha(color?: string): {
+export function parseColorAlpha(color?: string, fallbackHex = "#1E293B"): {
   hex: string
   alpha: number
   isTransparent: boolean
 } {
   if (!color || color === "transparent" || color === "none") {
-    return { hex: "#000000", alpha: 0, isTransparent: true }
+    return { hex: fallbackHex, alpha: 0, isTransparent: true }
   }
 
   if (color.startsWith("rgba")) {
@@ -69,5 +70,5 @@ export function parseColorAlpha(color?: string): {
     }
   }
 
-  return { hex: "#0070f3", alpha: 1, isTransparent: false }
+  return { hex: fallbackHex, alpha: 1, isTransparent: false }
 }

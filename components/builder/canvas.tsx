@@ -8,6 +8,7 @@ import {
   MiniMap,
   BackgroundVariant,
   ConnectionMode,
+  ViewportPortal,
   type Node,
   type Edge,
   type OnNodesChange,
@@ -365,13 +366,15 @@ export function Canvas({
         )}
 
         {/* ── Live Animated Packet Particle Layer ──────────────────── */}
-        <PacketParticleOverlay
-          step={currentStep}
-          nodes={nodes}
-          edges={edges}
-          progress={playbackProps?.progress || 0}
-          isPlaying={Boolean(playbackProps && playbackProps.mode !== "idle")}
-        />
+        <ViewportPortal>
+          <PacketParticleOverlay
+            step={currentStep}
+            nodes={nodes}
+            edges={edges}
+            progress={playbackProps?.progress || 0}
+            isPlaying={Boolean(playbackProps && playbackProps.mode !== "idle")}
+          />
+        </ViewportPortal>
         <Controls
           showInteractive={false}
           className="!bg-card/90 !border-border !shadow-md !rounded-xl overflow-hidden"
