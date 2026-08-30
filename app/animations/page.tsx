@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Catálogo de Animaciones Educativas",
+  title: "Catálogo de animaciones educativas",
   description: "Explora animaciones interactivas paso a paso de redes, matemáticas, física y computación.",
 }
 
@@ -19,10 +19,10 @@ export default async function AnimationsIndexPage() {
       <div className="space-y-1.5">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary shadow-xs">
           <Sparkles className="size-3.5" />
-          <span>Catálogo Abierto de Animaciones Educativas</span>
+          <span>Catálogo abierto de animaciones educativas</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-          Aprende Conceptos Complejos Paso a Paso
+          Aprende conceptos complejos paso a paso
         </h1>
         <p className="text-xs md:text-sm text-muted-foreground max-w-2xl leading-relaxed">
           Explora la colección oficial y las animaciones interactivas publicadas por la comunidad sobre redes, telecomunicaciones, matemáticas y ciencias.

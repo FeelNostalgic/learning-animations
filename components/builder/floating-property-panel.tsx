@@ -220,7 +220,7 @@ export function FloatingPropertyPanel({
             <Spline className="size-4 text-primary shrink-0" />
           )}
           <span className="text-xs font-bold text-foreground truncate">
-            {selectedNode ? selectedNode.label || "Propiedades del Nodo" : "Propiedades de Conexión"}
+            {selectedNode ? selectedNode.label || "Propiedades del nodo" : "Propiedades de conexión"}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -250,7 +250,7 @@ export function FloatingPropertyPanel({
               {/* Label */}
               <div>
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Etiqueta / Nombre
+                  Etiqueta / nombre
                 </label>
                 <input
                   type="text"
@@ -264,7 +264,7 @@ export function FloatingPropertyPanel({
               <div className="space-y-1.5 rounded-xl border border-border bg-muted/20 p-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Fondo (Relleno)
+                    Fondo (relleno)
                   </span>
                   <button
                     type="button"
@@ -275,7 +275,7 @@ export function FloatingPropertyPanel({
                         : "border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {fillParsed.isTransparent ? "Transparente ✓" : "Hacer Transparente"}
+                      {fillParsed.isTransparent ? "Transparente ✓" : "Hacer transparente"}
                   </button>
                 </div>
 
@@ -293,7 +293,7 @@ export function FloatingPropertyPanel({
 
                     <div>
                       <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
-                        <span>Opacidad Fondo (Alpha)</span>
+                        <span>Opacidad fondo (alpha)</span>
                         <span>{Math.round(fillParsed.alpha * 100)}%</span>
                       </div>
                       <input
@@ -314,7 +314,7 @@ export function FloatingPropertyPanel({
               <div className="space-y-1.5 rounded-xl border border-border bg-muted/20 p-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Borde (Trazo)
+                    Borde (trazo)
                   </span>
                   <button
                     type="button"
@@ -325,7 +325,7 @@ export function FloatingPropertyPanel({
                         : "border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {strokeParsed.isTransparent ? "Transparente ✓" : "Hacer Transparente"}
+                      {strokeParsed.isTransparent ? "Transparente ✓" : "Hacer transparente"}
                   </button>
                 </div>
 
@@ -343,7 +343,7 @@ export function FloatingPropertyPanel({
 
                     <div>
                       <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
-                        <span>Opacidad Borde (Alpha)</span>
+                        <span>Opacidad borde (alpha)</span>
                         <span>{Math.round(strokeParsed.alpha * 100)}%</span>
                       </div>
                       <input
@@ -362,7 +362,7 @@ export function FloatingPropertyPanel({
                 {/* Stroke Width */}
                 <div className="pt-1">
                   <div className="flex justify-between text-[10px] font-medium text-muted-foreground mb-1">
-                    <span>Grosor del Borde</span>
+                    <span>Grosor del borde</span>
                     <span>{selectedNode.strokeWidth ?? 2}px</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -435,7 +435,7 @@ export function FloatingPropertyPanel({
               {selectedNode.type === "image" && (
                 <div>
                   <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Ajuste de Imagen
+                    Ajuste de imagen
                   </label>
                   <select
                     value={selectedNode.imageFit || "contain"}
@@ -458,7 +458,7 @@ export function FloatingPropertyPanel({
                   className="w-full h-8 text-xs font-semibold cursor-pointer"
                 >
                   <Trash2 className="size-3.5 mr-1.5" />
-                  Eliminar Nodo
+                  Eliminar nodo
                 </Button>
               </div>
             </>
@@ -470,7 +470,7 @@ export function FloatingPropertyPanel({
               {/* Line Type */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Tipo de Trazado
+                  Tipo de trazado
                 </label>
                 <div className="grid grid-cols-3 gap-1 bg-muted/60 p-1 rounded-lg">
                   <button
@@ -509,7 +509,7 @@ export function FloatingPropertyPanel({
               {/* Arrow Direction */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Dirección de Flecha
+                  Dirección de flecha
                 </label>
                 <div className="grid grid-cols-4 gap-1 bg-muted/60 p-1 rounded-lg">
                   <button
@@ -556,7 +556,7 @@ export function FloatingPropertyPanel({
               {/* Color & Stroke Width */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-medium text-muted-foreground">Color de Línea</label>
+                  <label className="text-[10px] font-medium text-muted-foreground">Color de línea</label>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <input
                       type="color"
@@ -569,7 +569,7 @@ export function FloatingPropertyPanel({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-medium text-muted-foreground">Grosor de Trazo</label>
+                  <label className="text-[10px] font-medium text-muted-foreground">Grosor de trazo</label>
                   <input
                     type="number"
                     step="0.5"
@@ -586,7 +586,7 @@ export function FloatingPropertyPanel({
               <label className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-2 cursor-pointer">
                 <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
                   <Sparkles className="size-3.5 text-amber-500" />
-                  <span>Línea Discontinua / Animada</span>
+                  <span>Línea discontinua / animada</span>
                 </div>
                 <input
                   type="checkbox"
@@ -600,7 +600,7 @@ export function FloatingPropertyPanel({
               <div className="space-y-1.5 border-t border-border pt-2">
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Etiqueta / Nombre
+                    Etiqueta / nombre
                   </label>
                   <button
                     onClick={handleEdgeToggleShowLabel}
@@ -648,7 +648,7 @@ export function FloatingPropertyPanel({
                   className="w-full h-8 text-xs font-semibold cursor-pointer"
                 >
                   <Trash2 className="size-3.5 mr-1.5" />
-                  Eliminar Conexión
+                  Eliminar conexión
                 </Button>
               </div>
             </>

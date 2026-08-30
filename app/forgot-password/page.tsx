@@ -16,7 +16,7 @@ export default function ForgotPasswordPage() {
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <KeyRound className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Recuperar Contraseña</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Recuperar contraseña</h1>
           <p className="text-sm text-muted-foreground">
             Introduce tu correo y te enviaremos un enlace de recuperación
           </p>
@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" htmlFor="email">
-                Correo Electrónico
+                Correo electrónico
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center">
           <Link href="/login" className="inline-flex items-center gap-2 text-xs font-semibold text-primary hover:underline">
             <ArrowLeft className="h-3.5 w-3.5" />
-            Volver a Iniciar Sesión
+            Volver a iniciar sesión
           </Link>
         </div>
       </div>

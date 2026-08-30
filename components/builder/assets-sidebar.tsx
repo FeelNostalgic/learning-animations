@@ -88,7 +88,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
   const handleAddExternalImage = () => {
     if (!externalUrl.trim()) return
     onAddNode("image", {
-      label: "Imagen Web",
+      label: "Imagen web",
       imageUrl: externalUrl.trim(),
       width: 140,
       height: 140,
@@ -102,7 +102,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
       <div className="border-b border-border p-3">
         <h2 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
           <Shapes className="size-3.5 text-primary" />
-          <span>Biblioteca de Assets</span>
+          <span>Biblioteca de assets</span>
         </h2>
         <p className="text-[10px] text-muted-foreground mt-0.5">
           Haz clic en un componente para añadirlo al lienzo
@@ -186,7 +186,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
                 </div>
                 <div>
                   <h3 className="text-xs font-semibold text-foreground">Círculo</h3>
-                  <p className="text-[10px] text-muted-foreground">Nodo circular / Punto</p>
+                  <p className="text-[10px] text-muted-foreground">Nodo circular / punto</p>
                 </div>
               </div>
               <Plus className="size-3.5 text-muted-foreground" />
@@ -236,7 +236,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
                 </div>
                 <div>
                   <h3 className="text-xs font-semibold text-foreground">Diamante</h3>
-                  <p className="text-[10px] text-muted-foreground">Decisión / Condición</p>
+                  <p className="text-[10px] text-muted-foreground">Decisión / condición</p>
                 </div>
               </div>
               <Plus className="size-3.5 text-muted-foreground" />
@@ -260,7 +260,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
                   <Sparkles className="size-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-semibold text-foreground">Píldora / Estado</h3>
+                  <h3 className="text-xs font-semibold text-foreground">Píldora / estado</h3>
                   <p className="text-[10px] text-muted-foreground">Etiqueta redondeada</p>
                 </div>
               </div>
@@ -297,7 +297,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
             <button
               onClick={() =>
                 onAddNode("math", {
-                  label: "Integral Definida",
+                  label: "Integral definida",
                   content: "\\int_a^b f(x) dx = F(b) - F(a)",
                   width: 220,
                   height: 80,
@@ -325,7 +325,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
               onClick={() =>
                 onAddNode("text", {
                   label: "Explicación",
-                  content: "**Concepto Clave**:\nExplica aquí los detalles del paso.",
+                  content: "**Concepto clave**:\nExplica aquí los detalles del paso.",
                   width: 220,
                   height: 110,
                 })
@@ -337,7 +337,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
                   <FileText className="size-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-semibold text-foreground">Tarjeta Markdown</h3>
+                  <h3 className="text-xs font-semibold text-foreground">Tarjeta markdown</h3>
                   <p className="text-[10px] text-muted-foreground">Texto enriquecido y notas</p>
                 </div>
               </div>
@@ -360,7 +360,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
                   <Box className="size-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-semibold text-foreground">Contenedor / Grupo</h3>
+                  <h3 className="text-xs font-semibold text-foreground">Contenedor / grupo</h3>
                   <p className="text-[10px] text-muted-foreground">Caja agrupador de nodos</p>
                 </div>
               </div>

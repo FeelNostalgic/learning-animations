@@ -40,7 +40,7 @@ interface FacetedCatalogProps {
 }
 
 const DISCIPLINES: { key: string; label: string }[] = [
-  { key: "all", label: "Todas las Disciplinas" },
+  { key: "all", label: "Todas las disciplinas" },
   { key: "general", label: "General" },
   { key: "math", label: "Matemáticas" },
   { key: "physics", label: "Física" },
@@ -50,7 +50,7 @@ const DISCIPLINES: { key: string; label: string }[] = [
 ]
 
 const DIFFICULTIES: { key: string; label: string }[] = [
-  { key: "all", label: "Cualquier Dificultad" },
+  { key: "all", label: "Cualquier dificultad" },
   { key: "beginner", label: "Principiante" },
   { key: "intermediate", label: "Intermedio" },
   { key: "advanced", label: "Avanzado" },
@@ -284,7 +284,7 @@ export function FacetedCatalog({ officialItems, communityItems }: FacetedCatalog
             onChange={(e) => setSelectedTopic(e.target.value)}
             className="bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer max-w-[160px] truncate"
           >
-            <option value="all" className="bg-card text-foreground">Todos los Temas ({uniqueTopics.length})</option>
+            <option value="all" className="bg-card text-foreground">Todos los temas ({uniqueTopics.length})</option>
             {uniqueTopics.map((topic) => (
               <option key={topic} value={topic} className="bg-card text-foreground">
                 {topic}
@@ -302,7 +302,7 @@ export function FacetedCatalog({ officialItems, communityItems }: FacetedCatalog
             className="h-8 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer ml-auto"
           >
             <RotateCcw className="size-3 mr-1" />
-            <span>Limpiar Filtros</span>
+            <span>Limpiar filtros</span>
           </Button>
         )}
       </div>
@@ -392,7 +392,7 @@ export function FacetedCatalog({ officialItems, communityItems }: FacetedCatalog
             className="mt-4 text-xs font-semibold cursor-pointer"
           >
             <RotateCcw className="size-3 mr-1.5" />
-            <span>Restablecer Filtros</span>
+            <span>Restablecer filtros</span>
           </Button>
         </div>
       )}

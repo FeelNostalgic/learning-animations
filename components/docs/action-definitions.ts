@@ -5,7 +5,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 1. HIGHLIGHT
   {
     type: "highlight",
-    title: "Highlight (Resaltado)",
+    title: "Highlight (resaltado)",
     subtitle: "Enfoca la atención visual cambiando color y contorno",
     description:
       "Modifica de forma suave el color del borde, el relleno o el contorno de un nodo para destacar el elemento que está procesando información en el paso actual.",
@@ -85,7 +85,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 2. PULSE
   {
     type: "pulse",
-    title: "Pulse (Pulso Radial)",
+    title: "Pulse (pulso radial)",
     subtitle: "Emite ondas expansivas de señal o evento",
     description:
       "Genera anillos concéntricos que se expanden y desvanecen desde el centro del nodo, simulando emisión de señal WiFi, latido o transmisión.",
@@ -152,7 +152,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 3. PACKET ALONG PATH
   {
     type: "packet",
-    title: "Packet along Path (Envío de Paquete)",
+    title: "Packet along path (envío de paquete)",
     subtitle: "Movimiento continuo siguiendo curvas Bézier",
     description:
       "Transporta partículas o paquetes de datos a lo largo de conectores rectos o curvos paramétricos, con estela brillante y etiqueta de carga útil.",
@@ -244,7 +244,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 4. TRANSFORM
   {
     type: "transform",
-    title: "Transform (Transformación & Movimiento)",
+    title: "Transform (transformación & movimiento)",
     subtitle: "Traslación, escalado y rotación suave",
     description:
       "Aplica cambios de posición $(x, y)$, escala o ángulo de rotación a uno o múltiples nodos con interpolación natural basada en física.",
@@ -295,7 +295,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 5. FADE
   {
     type: "fade",
-    title: "Fade (Aparición / Desvanecimiento)",
+    title: "Fade (aparición / desvanecimiento)",
     subtitle: "Control suave de visibilidad y opacidad",
     description:
       "Transiciona la opacidad de 0 a 1 o viceversa, permitiendo que elementos del diagrama aparezcan cuando son relevantes o se atenúen cuando pasan a segundo plano.",
@@ -350,7 +350,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 6. PATH DRAW
   {
     type: "path_draw",
-    title: "Path Draw (Trazado Progresivo)",
+    title: "Path draw (trazado progresivo)",
     subtitle: "Dibuja líneas y curvas como con pluma digital",
     description:
       "Anima el atributo strokeDashoffset para dibujar progresivamente conexiones, vectores o gráficas de funciones matemáticas en tiempo real.",
@@ -409,7 +409,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 7. BADGE
   {
     type: "badge",
-    title: "Badge (Insignia de Estado)",
+    title: "Badge (insignia de estado)",
     subtitle: "Pops flotantes de estado OK, FAIL o métricas",
     description:
       "Hace brotar con rebote elástico una insignia de estado o indicador sobre el nodo (por ejemplo: 'ACK', '200 OK', 'DROP', 'SYN-SENT').",
@@ -473,7 +473,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 8. TOOLTIP
   {
     type: "tooltip",
-    title: "Tooltip (Bocadillo de Información)",
+    title: "Tooltip (bocadillo de información)",
     subtitle: "Explicación contextual flotante con Markdown",
     description:
       "Despliega una tarjeta emergente conectada al nodo para brindar explicaciones pedagógicas detalladas sin saturar permanentemente el lienzo.",
@@ -503,7 +503,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
           <g id="${uid}-tooltip" transform="translate(0, -65)" opacity="0">
             <rect x="-90" y="-22" width="180" height="44" rx="8" fill="${tooltipBg}" stroke="#0070F3" stroke-width="1.5" />
             <polygon points="-6,22 6,22 0,28" fill="${tooltipBg}" />
-            <text y="-4" fill="${tooltipText}" font-size="10" font-weight="bold" font-family="sans-serif" text-anchor="middle">Pendiente Tangente</text>
+            <text y="-4" fill="${tooltipText}" font-size="10" font-weight="bold" font-family="sans-serif" text-anchor="middle">Pendiente tangente</text>
             <text y="10" fill="#38BDF8" font-size="8.5" font-family="monospace" text-anchor="middle">m = lim_{h->0} [f(x+h)-f(x)]/h</text>
           </g>
         </g>
@@ -537,7 +537,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   // 9. MATH EVAL
   {
     type: "math_eval",
-    title: "Math Eval (Evaluación KaTeX)",
+    title: "Math eval (evaluación KaTeX)",
     subtitle: "Sustitución y resolución algebraica paso a paso",
     description:
       "Transforma y resuelve expresiones matemáticas paso a paso mostrando la sustitución de incógnitas por sus valores numéricos calculados.",

@@ -48,7 +48,7 @@ export default function SignupPage() {
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Crear Cuenta</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Crear cuenta</h1>
           <p className="text-sm text-muted-foreground">
             Únete para diseñar y publicar animaciones interactivas
           </p>
@@ -68,7 +68,7 @@ export default function SignupPage() {
               <p className="font-semibold">¡Cuenta creada con éxito!</p>
               <p className="text-xs">Revisa tu correo electrónico para confirmar tu cuenta o inicia sesión.</p>
               <Link href="/login" className="mt-2 inline-block font-semibold underline">
-                Ir a Iniciar Sesión
+                Ir a iniciar sesión
               </Link>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function SignupPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" htmlFor="username">
-                  Nombre de Usuario (Único)
+                  Nombre de usuario (único)
                 </label>
                 {usernameStatus.checking && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -114,7 +114,7 @@ export default function SignupPage() {
 
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" htmlFor="email">
-                Correo Electrónico
+                Correo electrónico
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

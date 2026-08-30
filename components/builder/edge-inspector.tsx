@@ -135,7 +135,7 @@ export function EdgeInspector({
       <div className="flex items-center justify-between border-b border-border pb-2">
         <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
           <Spline className="size-3.5" />
-          <span>Propiedades de Conexión</span>
+          <span>Propiedades de conexión</span>
         </h3>
         <div className="flex items-center gap-1">
           <Button
@@ -162,7 +162,7 @@ export function EdgeInspector({
       {/* Geometry / Line Type */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          Tipo de Trazado
+          Tipo de trazado
         </label>
         <div className="grid grid-cols-3 gap-1 bg-muted/60 p-1 rounded-lg">
           <button
@@ -173,7 +173,7 @@ export function EdgeInspector({
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Bézier Curva
+            Bézier curva
           </button>
           <button
             onClick={() => handleTypeChange("straight")}
@@ -201,7 +201,7 @@ export function EdgeInspector({
       {/* Arrowhead Direction */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          Dirección de Flecha
+          Dirección de flecha
         </label>
         <div className="grid grid-cols-4 gap-1 bg-muted/60 p-1 rounded-lg">
           <button
@@ -249,7 +249,7 @@ export function EdgeInspector({
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] font-medium text-muted-foreground">Color de Línea</label>
+            <label className="text-[10px] font-medium text-muted-foreground">Color de línea</label>
             <div className="flex items-center gap-1.5 mt-0.5">
               <input
                 type="color"
@@ -262,7 +262,7 @@ export function EdgeInspector({
           </div>
 
           <div>
-            <label className="text-[10px] font-medium text-muted-foreground">Grosor de Trazo</label>
+            <label className="text-[10px] font-medium text-muted-foreground">Grosor de trazo</label>
             <input
               type="number"
               step="0.5"
@@ -279,7 +279,7 @@ export function EdgeInspector({
         <label className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-2 cursor-pointer">
           <div className="flex items-center gap-1.5 text-xs text-foreground">
             <Sparkles className="size-3.5 text-amber-500" />
-            <span>Línea Discontinua / Animada</span>
+            <span>Línea discontinua / animada</span>
           </div>
           <input
             type="checkbox"
@@ -294,7 +294,7 @@ export function EdgeInspector({
       <div className="space-y-1.5 border-t border-border pt-2.5">
         <div className="flex items-center justify-between">
           <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-            Etiqueta / Nombre
+            Etiqueta / nombre
           </label>
           <button
             onClick={handleToggleShowLabel}

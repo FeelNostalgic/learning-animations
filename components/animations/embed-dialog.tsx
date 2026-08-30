@@ -14,23 +14,25 @@ import {
 
 interface EmbedDialogProps {
   slugOrId: string
+  isDynamic?: boolean
   isOpen: boolean
   onClose: () => void
 }
 
 export function EmbedDialog({
   slugOrId,
+  isDynamic,
   isOpen,
   onClose,
 }: EmbedDialogProps) {
   const origin = typeof window !== "undefined" ? window.location.origin : ""
-  const embedUrl = `${origin}/embed/${slugOrId}`
+  const embedUrl = `${origin}/embed/${slugOrId}${isDynamic ? "?dynamic=true" : ""}`
   const iframeSnippet = `<iframe src="${embedUrl}" width="100%" height="520" frameborder="0" allowfullscreen></iframe>`
 
   const handleCopySnippet = async () => {
     try {
       await navigator.clipboard.writeText(iframeSnippet)
-      toast.success("Código iFrame copiado", {
+      toast.success("Código iframe copiado", {
         description: "Pega este snippet en tu LMS, blog o sitio web.",
       })
     } catch {
@@ -58,7 +60,7 @@ export function EmbedDialog({
               <Code className="size-5" />
             </div>
             <div>
-              <DialogTitle>Incrustar Animación</DialogTitle>
+              <DialogTitle>Incrustar animación</DialogTitle>
               <DialogDescription>
                 Copia el código iframe o el enlace directo para incrustar esta animación interactiva.
               </DialogDescription>
@@ -70,7 +72,7 @@ export function EmbedDialog({
         <div className="space-y-1.5 pt-2">
           <div className="flex items-center justify-between">
             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Código HTML (iFrame)
+              Código HTML (iframe)
             </label>
             <span className="text-[10px] text-muted-foreground font-mono">100% Responsive</span>
           </div>
@@ -82,7 +84,7 @@ export function EmbedDialog({
         {/* URL Box with direct Copy button */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Enlace Directo
+            Enlace directo
           </label>
           <div className="flex items-center gap-2 rounded-xl border border-border bg-background/50 px-3 py-2 font-mono text-[10px] text-foreground">
             <span className="truncate flex-1 select-text cursor-text">{embedUrl}</span>
@@ -109,7 +111,7 @@ export function EmbedDialog({
             className="h-8 gap-1.5 text-xs font-semibold cursor-pointer"
           >
             <Copy className="size-3.5" />
-            <span>Copiar iFrame</span>
+            <span>Copiar iframe</span>
           </Button>
         </DialogFooter>
       </DialogContent>

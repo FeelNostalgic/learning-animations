@@ -423,7 +423,7 @@ export function UserAnimationsDashboard({
               onClick={handleConfirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Eliminar Definitivamente
+              Eliminar definitivamente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
