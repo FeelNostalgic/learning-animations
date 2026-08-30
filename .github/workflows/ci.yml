@@ -134,4 +134,7 @@ jobs:
             git merge dev --no-edit
             git push origin main --tags
             git checkout dev
-          git push origin dev
+            git push origin dev
+          else
+            echo "No changes to merge. Skipping merge."
+          fi
