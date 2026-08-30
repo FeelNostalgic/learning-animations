@@ -56,3 +56,5 @@ test_output*.txt
 # temp
 screenshots/*
 
+# Local AI runtime state
+.atl/
