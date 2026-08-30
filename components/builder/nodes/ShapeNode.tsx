@@ -3,6 +3,7 @@
 import React, { memo, useState, useRef, useEffect, useCallback } from "react"
 import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from "@xyflow/react"
 import { UniversalNodeView } from "@/components/animations/visual/universal-node-view"
+import { cn } from "@/lib/utils"
 import type { UniversalNode } from "@/types/universal-animation"
 
 export const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
@@ -62,43 +63,53 @@ export const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
     shapeDetails,
   }
 
+  const isReadOnly = Boolean(data.isReadOnly)
+  const handleClass = isReadOnly
+    ? "!opacity-0 !pointer-events-none !w-0 !h-0 !border-0 !p-0 !min-w-0 !min-h-0 !bg-transparent"
+    : "!h-2.5 !w-2.5 !bg-primary border-2 border-background"
+
   return (
     <div
-      onDoubleClick={() => setIsEditingInline(true)}
-      className="relative flex items-center justify-center cursor-grab active:cursor-grabbing"
+      onDoubleClick={() => !isReadOnly && setIsEditingInline(true)}
+      className={cn(
+        "relative flex items-center justify-center",
+        !isReadOnly && "cursor-grab active:cursor-grabbing"
+      )}
     >
-      <NodeResizer
-        isVisible={selected}
-        minWidth={40}
-        minHeight={40}
-        onResize={handleResize}
-        handleClassName="!w-2.5 !h-2.5 !bg-primary !border-2 !border-background !rounded-full"
-        lineClassName="!border-primary/60"
-      />
+      {!isReadOnly && (
+        <NodeResizer
+          isVisible={selected}
+          minWidth={40}
+          minHeight={40}
+          onResize={handleResize}
+          handleClassName="!w-2.5 !h-2.5 !bg-primary !border-2 !border-background !rounded-full"
+          lineClassName="!border-primary/60"
+        />
+      )}
 
       <Handle
         type="source"
         position={Position.Top}
         id="top"
-        className="!h-2.5 !w-2.5 !bg-primary border-2 border-background"
+        className={handleClass}
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="bottom"
-        className="!h-2.5 !w-2.5 !bg-primary border-2 border-background"
+        className={handleClass}
       />
       <Handle
         type="source"
         position={Position.Left}
         id="left"
-        className="!h-2.5 !w-2.5 !bg-primary border-2 border-background"
+        className={handleClass}
       />
       <Handle
         type="source"
         position={Position.Right}
         id="right"
-        className="!h-2.5 !w-2.5 !bg-primary border-2 border-background"
+        className={handleClass}
       />
 
       <UniversalNodeView

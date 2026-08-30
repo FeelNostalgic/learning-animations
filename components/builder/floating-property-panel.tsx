@@ -47,47 +47,31 @@ export function FloatingPropertyPanel({
   if (!selectedNode && !selectedEdge) return null
 
   // ── Node Color & Alpha Calculations ──────────────────────────────
-  const fillParsed = selectedNode ? parseColorAlpha(selectedNode.fill) : { hex: "#1E293B", alpha: 1, isTransparent: false }
-  const strokeParsed = selectedNode ? parseColorAlpha(selectedNode.stroke) : { hex: "#0070F3", alpha: 1, isTransparent: false }
+  const fillParsed = selectedNode
+    ? parseColorAlpha(selectedNode.fill, "#1E293B")
+    : { hex: "#1E293B", alpha: 1, isTransparent: false }
+  const strokeParsed = selectedNode
+    ? parseColorAlpha(selectedNode.stroke, "#0070F3")
+    : { hex: "#0070F3", alpha: 1, isTransparent: false }
 
   const handleNodeFillHexChange = (hex: string) => {
     if (!selectedNode) return
-    const alpha = fillParsed.isTransparent ? 1 : fillParsed.alpha
-    onUpdateNode({ ...selectedNode, fill: hexToRgba(hex, alpha) })
+    onUpdateNode({ ...selectedNode, fill: hexToRgba(hex, fillParsed.alpha) })
   }
 
   const handleNodeFillAlphaChange = (alpha: number) => {
     if (!selectedNode) return
-    onUpdateNode({ ...selectedNode, fill: hexToRgba(fillParsed.hex, alpha) })
-  }
-
-  const handleToggleTransparentFill = () => {
-    if (!selectedNode) return
-    if (fillParsed.isTransparent) {
-      onUpdateNode({ ...selectedNode, fill: hexToRgba(fillParsed.hex || "#1E293B", 1) })
-    } else {
-      onUpdateNode({ ...selectedNode, fill: "transparent" })
-    }
+    onUpdateNode({ ...selectedNode, fill: hexToRgba(fillParsed.hex || "#1E293B", alpha) })
   }
 
   const handleNodeStrokeHexChange = (hex: string) => {
     if (!selectedNode) return
-    const alpha = strokeParsed.isTransparent ? 1 : strokeParsed.alpha
-    onUpdateNode({ ...selectedNode, stroke: hexToRgba(hex, alpha) })
+    onUpdateNode({ ...selectedNode, stroke: hexToRgba(hex, strokeParsed.alpha) })
   }
 
   const handleNodeStrokeAlphaChange = (alpha: number) => {
     if (!selectedNode) return
-    onUpdateNode({ ...selectedNode, stroke: hexToRgba(strokeParsed.hex, alpha) })
-  }
-
-  const handleToggleTransparentStroke = () => {
-    if (!selectedNode) return
-    if (strokeParsed.isTransparent) {
-      onUpdateNode({ ...selectedNode, stroke: hexToRgba(strokeParsed.hex || "#0070F3", 1) })
-    } else {
-      onUpdateNode({ ...selectedNode, stroke: "transparent" })
-    }
+    onUpdateNode({ ...selectedNode, stroke: hexToRgba(strokeParsed.hex || "#0070F3", alpha) })
   }
 
   // ── Edge Calculations ───────────────────────────────────────────
@@ -261,103 +245,83 @@ export function FloatingPropertyPanel({
               </div>
 
               {/* Background Fill & Alpha Channel */}
-              <div className="space-y-1.5 rounded-xl border border-border bg-muted/20 p-2.5">
+              <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Fondo (relleno)
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleToggleTransparentFill}
-                    className={`text-[9px] px-1.5 py-0.5 rounded font-semibold border transition-all ${
-                      fillParsed.isTransparent
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                      {fillParsed.isTransparent ? "Transparente ✓" : "Hacer transparente"}
-                  </button>
+                  <span className="text-[10px] font-mono font-bold text-foreground">
+                    {Math.round(fillParsed.alpha * 100)}%
+                  </span>
                 </div>
 
-                {!fillParsed.isTransparent && (
-                  <div className="space-y-2 pt-1">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={fillParsed.hex}
-                        onChange={(e) => handleNodeFillHexChange(e.target.value)}
-                        className="h-7 w-10 rounded border border-border cursor-pointer bg-transparent"
-                      />
-                      <span className="font-mono text-xs text-foreground font-semibold">{fillParsed.hex}</span>
-                    </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={fillParsed.hex}
+                    onChange={(e) => handleNodeFillHexChange(e.target.value)}
+                    className="h-7 w-10 rounded border border-border cursor-pointer bg-transparent"
+                  />
+                  <span className="font-mono text-xs text-foreground font-semibold uppercase">
+                    {fillParsed.hex}
+                  </span>
+                </div>
 
-                    <div>
-                      <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
-                        <span>Opacidad fondo (alpha)</span>
-                        <span>{Math.round(fillParsed.alpha * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={fillParsed.alpha}
-                        onChange={(e) => handleNodeFillAlphaChange(parseFloat(e.target.value))}
-                        className="w-full h-1 mt-1 rounded bg-border cursor-pointer"
-                      />
-                    </div>
+                <div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+                    <span>Opacidad</span>
+                    <span>{Math.round(fillParsed.alpha * 100)}%</span>
                   </div>
-                )}
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={fillParsed.alpha}
+                    onChange={(e) => handleNodeFillAlphaChange(parseFloat(e.target.value))}
+                    className="w-full h-1 mt-1 rounded bg-border cursor-pointer"
+                  />
+                </div>
               </div>
 
               {/* Border Stroke & Alpha Channel */}
-              <div className="space-y-1.5 rounded-xl border border-border bg-muted/20 p-2.5">
+              <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Borde (trazo)
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleToggleTransparentStroke}
-                    className={`text-[9px] px-1.5 py-0.5 rounded font-semibold border transition-all ${
-                      strokeParsed.isTransparent
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                      {strokeParsed.isTransparent ? "Transparente ✓" : "Hacer transparente"}
-                  </button>
+                  <span className="text-[10px] font-mono font-bold text-foreground">
+                    {Math.round(strokeParsed.alpha * 100)}%
+                  </span>
                 </div>
 
-                {!strokeParsed.isTransparent && (
-                  <div className="space-y-2 pt-1">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={strokeParsed.hex}
-                        onChange={(e) => handleNodeStrokeHexChange(e.target.value)}
-                        className="h-7 w-10 rounded border border-border cursor-pointer bg-transparent"
-                      />
-                      <span className="font-mono text-xs text-foreground font-semibold">{strokeParsed.hex}</span>
-                    </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={strokeParsed.hex}
+                    onChange={(e) => handleNodeStrokeHexChange(e.target.value)}
+                    className="h-7 w-10 rounded border border-border cursor-pointer bg-transparent"
+                  />
+                  <span className="font-mono text-xs text-foreground font-semibold uppercase">
+                    {strokeParsed.hex}
+                  </span>
+                </div>
 
-                    <div>
-                      <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
-                        <span>Opacidad borde (alpha)</span>
-                        <span>{Math.round(strokeParsed.alpha * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={strokeParsed.alpha}
-                        onChange={(e) => handleNodeStrokeAlphaChange(parseFloat(e.target.value))}
-                        className="w-full h-1 mt-1 rounded bg-border cursor-pointer"
-                      />
-                    </div>
+                <div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+                    <span>Opacidad</span>
+                    <span>{Math.round(strokeParsed.alpha * 100)}%</span>
                   </div>
-                )}
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={strokeParsed.alpha}
+                    onChange={(e) => handleNodeStrokeAlphaChange(parseFloat(e.target.value))}
+                    className="w-full h-1 mt-1 rounded bg-border cursor-pointer"
+                  />
+                </div>
 
                 {/* Stroke Width */}
                 <div className="pt-1">
@@ -430,6 +394,87 @@ export function FloatingPropertyPanel({
                   />
                 </div>
               </div>
+
+              {/* Math & Text Node Header & Formatting Controls */}
+              {(selectedNode.type === "math" || selectedNode.type === "text") && (
+                <div className="space-y-2 border-t border-border pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Mostrar cabecera / título
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentProps = (selectedNode.props as Record<string, any>) || {}
+                        const nextShow = currentProps.showHeader === false ? true : false
+                        onUpdateNode({
+                          ...selectedNode,
+                          props: { ...currentProps, showHeader: nextShow },
+                        })
+                      }}
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-md border transition-all cursor-pointer ${
+                        selectedNode.props?.showHeader !== false
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {selectedNode.props?.showHeader !== false ? "Visible" : "Oculto"}
+                    </button>
+                  </div>
+
+                  {selectedNode.type === "text" && (
+                    <>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          Alineación de texto
+                        </label>
+                        <div className="grid grid-cols-3 gap-1 mt-1">
+                          {(["left", "center", "right"] as const).map((aln) => (
+                            <button
+                              key={aln}
+                              type="button"
+                              onClick={() => {
+                                const currentProps = (selectedNode.props as Record<string, any>) || {}
+                                onUpdateNode({
+                                  ...selectedNode,
+                                  props: { ...currentProps, align: aln },
+                                })
+                              }}
+                              className={`py-1 text-xs font-semibold rounded-md border transition-all cursor-pointer capitalize ${
+                                (selectedNode.props?.align || "left") === aln
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {aln === "left" ? "Izquierda" : aln === "center" ? "Centro" : "Derecha"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          Comportamiento de desbordamiento
+                        </label>
+                        <select
+                          value={selectedNode.props?.overflow || "hidden"}
+                          onChange={(e) => {
+                            const currentProps = (selectedNode.props as Record<string, any>) || {}
+                            onUpdateNode({
+                              ...selectedNode,
+                              props: { ...currentProps, overflow: e.target.value },
+                            })
+                          }}
+                          className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none cursor-pointer"
+                        >
+                          <option value="hidden">Recortar exceso (Oculto)</option>
+                          <option value="visible">Sin recorte (Visible)</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Image node specific */}
               {selectedNode.type === "image" && (

@@ -45,6 +45,13 @@ interface AnimationContextValue {
   currentStep: number
   isPlaying: boolean
   progress: number
+  stepProgress: number
+  zoom: number
+  handleZoomIn: () => void
+  handleZoomOut: () => void
+  handleZoomReset: () => void
+  isFullscreen: boolean
+  handleFullscreenToggle: () => void
 }
 
 export const AnimationContext = createContext<AnimationContextValue | null>(null)
@@ -66,8 +73,8 @@ interface AnimationPlayerProps {
   editHref?: string
 }
 
-const ZOOM_MIN = 0.5
-const ZOOM_MAX = 2
+const ZOOM_MIN = 0.2
+const ZOOM_MAX = 3.0
 const ZOOM_STEP = 0.25
 
 export function AnimationPlayer({
@@ -88,6 +95,7 @@ export function AnimationPlayer({
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [stepProgress, setStepProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState(0)
   const [speedLabel, setSpeedLabel] = useState<PlaybackSpeedLabel>(1)
   const [loop, setLoop] = useState(false)
@@ -96,17 +104,51 @@ export function AnimationPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isEmbedOpen, setIsEmbedOpen] = useState(false)
 
-  const handleZoomIn = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)))
-  const handleZoomOut = () => setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)))
-  const handleZoomReset = () => setZoom(1)
+  const handleZoomIn = () => {
+    setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)))
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("player-zoom-action", { detail: { action: "in" } }))
+    }
+  }
+  const handleZoomOut = () => {
+    setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)))
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("player-zoom-action", { detail: { action: "out" } }))
+    }
+  }
+  const handleZoomReset = () => {
+    setZoom(1)
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("player-zoom-action", { detail: { action: "reset" } }))
+    }
+  }
 
-  const updateStep = useCallback((time: number) => {
+  useEffect(() => {
+    const handleZoomSynced = (e: CustomEvent<{ zoom: number }>) => {
+      if (typeof e.detail?.zoom === "number") {
+        setZoom(+e.detail.zoom.toFixed(2))
+      }
+    }
+    window.addEventListener("player-zoom-synced", handleZoomSynced as EventListener)
+    return () => {
+      window.removeEventListener("player-zoom-synced", handleZoomSynced as EventListener)
+    }
+  }, [])
+
+  const updateStep = useCallback((time: number, customTl?: gsap.core.Timeline) => {
     const times = stepTimesRef.current
     let step = 0
     for (let i = 0; i < times.length; i++) {
       if (time >= times[i] - 0.01) step = i
     }
     setCurrentStep(step)
+
+    const tl = customTl || tlRef.current
+    const tStart = times[step] ?? 0
+    const tEnd = times[step + 1] ?? (tl ? tl.duration() : tStart + 2)
+    const duration = Math.max(0.01, tEnd - tStart)
+    const currentStepProgress = Math.max(0, Math.min(1, (time - tStart) / duration))
+    setStepProgress(currentStepProgress)
   }, [])
 
   const registerTimeline = useCallback(
@@ -114,10 +156,12 @@ export function AnimationPlayer({
       tlRef.current = tl
 
       // Extract ordered step label times
-      const times = Object.entries(tl.labels)
-        .filter(([k]) => k.startsWith("step-"))
-        .sort((a, b) => Number(a[0].split("-")[1]) - Number(b[0].split("-")[1]))
-        .map(([, t]) => t as number)
+      const times = steps.map((s, idx) => {
+        const labelKey = s.id || `step-${idx + 1}`
+        return typeof tl.labels[labelKey] === "number"
+          ? (tl.labels[labelKey] as number)
+          : idx * (tl.duration() / Math.max(1, steps.length))
+      })
 
       stepTimesRef.current = times
       setTlDuration(tl.duration())
@@ -130,14 +174,14 @@ export function AnimationPlayer({
           tl.pause()
           tl.seek(targetTime)
           setProgress(tl.progress())
-          updateStep(targetTime)
+          updateStep(targetTime, tl)
           setIsPlaying(false)
           return
         }
 
         if (!isDraggingRef.current) {
           setProgress(tl.progress())
-          updateStep(tl.time())
+          updateStep(tl.time(), tl)
         }
       })
 
@@ -146,15 +190,17 @@ export function AnimationPlayer({
         if (loopRef.current) {
           tl.seek(0).play()
           setProgress(0)
+          setStepProgress(0)
           setCurrentStep(0)
         } else {
           setIsPlaying(false)
           setProgress(1)
+          setStepProgress(1)
           setCurrentStep(steps.length - 1)
         }
       })
     },
-    [steps.length, updateStep]
+    [steps, updateStep]
   )
 
   useEffect(() => {
@@ -170,7 +216,13 @@ export function AnimationPlayer({
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(document.fullscreenElement === playerRef.current)
+      const isNowFullscreen = document.fullscreenElement === playerRef.current
+      setIsFullscreen(isNowFullscreen)
+      if (typeof window !== "undefined") {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("player-zoom-action", { detail: { action: "reset" } }))
+        }, 120)
+      }
     }
 
     document.addEventListener("fullscreenchange", handleFullscreenChange)
@@ -332,7 +384,21 @@ export function AnimationPlayer({
   const activeStep = steps[currentStep]
 
   return (
-    <AnimationContext.Provider value={{ registerTimeline, currentStep, isPlaying, progress }}>
+    <AnimationContext.Provider
+      value={{
+        registerTimeline,
+        currentStep,
+        isPlaying,
+        progress,
+        stepProgress,
+        zoom,
+        handleZoomIn,
+        handleZoomOut,
+        handleZoomReset,
+        isFullscreen,
+        handleFullscreenToggle,
+      }}
+    >
       <div
         ref={playerRef}
         className={cn(
@@ -397,20 +463,15 @@ export function AnimationPlayer({
           )}
           style={{ flex: "1 1 0", minHeight: "360px", maxHeight: isFullscreen ? "none" : "55vh" }}
         >
-          {/* Zoomed content */}
-          <div
-            className="w-full h-full"
-            style={{
-              transform: zoom !== 1 ? `scale(${zoom})` : undefined,
-              transformOrigin: "center center",
-            }}
-          >
+          {/* Canvas Viewport */}
+          <div className="w-full h-full">
             {children}
           </div>
 
           {/* Zoom controls — overlay top-right */}
-          <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-md border border-border/60 bg-card/90 backdrop-blur-sm px-1 py-0.5">
+          <div className="absolute top-2 right-2 z-50 flex items-center gap-0.5 rounded-md border border-border/60 bg-card/95 backdrop-blur-sm px-1 py-0.5 shadow-md pointer-events-auto">
             <button
+              type="button"
               onClick={handleFullscreenToggle}
               className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
               title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
@@ -418,13 +479,16 @@ export function AnimationPlayer({
               {isFullscreen ? <Shrink className="size-4" /> : <Expand className="size-4" />}
             </button>
             <button
+              type="button"
               onClick={handleZoomOut}
               disabled={zoom <= ZOOM_MIN}
               className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 transition-colors cursor-pointer"
+              title="Alejar zoom (-)"
             >
               <ZoomOut className="size-4" />
             </button>
             <button
+              type="button"
               onClick={handleZoomReset}
               className="h-6 px-1.5 flex items-center justify-center rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent transition-colors min-w-[36px] cursor-pointer"
               title="Centrar y resetear zoom"
@@ -432,9 +496,11 @@ export function AnimationPlayer({
               {zoom === 1 ? <Maximize2 className="size-4" /> : `${Math.round(zoom * 100)}%`}
             </button>
             <button
+              type="button"
               onClick={handleZoomIn}
               disabled={zoom >= ZOOM_MAX}
               className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 transition-colors cursor-pointer"
+              title="Acercar zoom (+)"
             >
               <ZoomIn className="size-4" />
             </button>

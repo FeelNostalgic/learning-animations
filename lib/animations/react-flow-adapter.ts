@@ -26,10 +26,14 @@ export interface ReactFlowConversionMeta {
 /**
  * Converts UniversalAnimationData domain structure into React Flow Nodes and Edges.
  */
-export function universalToReactFlow(animation: UniversalAnimationData): {
+export function universalToReactFlow(
+  animation: UniversalAnimationData,
+  options?: { isReadOnly?: boolean }
+): {
   nodes: Node[]
   edges: Edge[]
 } {
+  const isReadOnly = Boolean(options?.isReadOnly)
   const nodes: Node[] = (animation.nodes || []).map((node) => ({
     id: node.id,
     type: node.type,
@@ -41,6 +45,7 @@ export function universalToReactFlow(animation: UniversalAnimationData): {
       zIndex: node.zIndex ?? 0,
     },
     data: {
+      isReadOnly,
       label: node.label,
       content: node.content,
       fill: node.fill,
@@ -64,17 +69,41 @@ export function universalToReactFlow(animation: UniversalAnimationData): {
     },
   }))
 
+  const nodePosMap = new Map((animation.nodes || []).map((n) => [n.id, { x: n.x, y: n.y }]))
   const connectors: UniversalConnector[] = animation.connectors || (animation as any).links || []
 
   const edges: Edge[] = connectors.map((conn) => {
+    const sourceId = (conn as any).sourceId || (conn as any).source
+    const targetId = (conn as any).targetId || (conn as any).target
     const hasForwardArrow = conn.directed === "forward" || conn.directed === "bidirectional"
     const hasBackwardArrow = conn.directed === "backward" || conn.directed === "bidirectional"
     const strokeColor = conn.color || "var(--primary, #0070F3)"
 
+    // Smart automatic handle detection for natural horizontal/vertical docking
+    let sourceHandle = (conn as any).sourceHandle
+    let targetHandle = (conn as any).targetHandle
+    if (!sourceHandle || !targetHandle) {
+      const src = nodePosMap.get(sourceId)
+      const tgt = nodePosMap.get(targetId)
+      if (src && tgt) {
+        const dx = tgt.x - src.x
+        const dy = tgt.y - src.y
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          sourceHandle = sourceHandle || (dx >= 0 ? "right" : "left")
+          targetHandle = targetHandle || (dx >= 0 ? "left" : "right")
+        } else {
+          sourceHandle = sourceHandle || (dy >= 0 ? "bottom" : "top")
+          targetHandle = targetHandle || (dy >= 0 ? "top" : "bottom")
+        }
+      }
+    }
+
     return {
       id: conn.id,
-      source: (conn as any).sourceId || (conn as any).source,
-      target: (conn as any).targetId || (conn as any).target,
+      source: sourceId,
+      target: targetId,
+      sourceHandle: sourceHandle || "right",
+      targetHandle: targetHandle || "left",
       type: conn.type === "straight" ? "straight" : conn.type === "orthogonal" ? "step" : "smoothstep",
       animated: conn.dashed,
       label: conn.label,

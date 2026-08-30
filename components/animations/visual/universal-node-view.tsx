@@ -118,6 +118,15 @@ export const UniversalNodeView = memo(function UniversalNodeView({
     }
   }
 
+  const isTransparentFill =
+    fill === "transparent" ||
+    fill === "none" ||
+    (typeof fill === "string" &&
+      (fill.includes(", 0)") ||
+        fill.includes(", 0.0)") ||
+        fill.includes(",0)") ||
+        fill === "rgba(0, 0, 0, 0)"))
+
   return (
     <div
       data-node-id={node.id}
@@ -151,28 +160,34 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       />
 
       {/* ── Active Live Badge Overlay ─────────────────────────────── */}
-      {badgeText && (
-        <div
-          data-badge-id={node.id}
-          className="node-badge absolute -top-3 -right-3 z-30 flex items-center justify-center rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-extrabold text-primary-foreground shadow-lg border border-primary-foreground/20 animate-bounce"
-        >
-          {badgeText}
-        </div>
-      )}
+      <div
+        data-badge-id={node.id}
+        className={cn(
+          "node-badge absolute -top-3 -right-3 z-30 flex items-center justify-center rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-extrabold text-primary-foreground shadow-lg border border-primary-foreground/20 transition-opacity duration-300",
+          badgeText ? "opacity-100 animate-bounce" : "opacity-0 pointer-events-none"
+        )}
+      >
+        {badgeText || (props.badge as string) || "•"}
+      </div>
 
       {/* ── Active Live Tooltip Callout ───────────────────────────── */}
-      {tooltipText && (
-        <div className="node-tooltip absolute -top-9 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center rounded-xl bg-card/95 border border-primary/50 px-2.5 py-1 text-[11px] font-bold text-foreground shadow-2xl backdrop-blur-md whitespace-nowrap pointer-events-none">
-          <span className="text-primary mr-1">✦</span>
-          <span>{tooltipText}</span>
-        </div>
-      )}
+      <div
+        data-tooltip-id={node.id}
+        className={cn(
+          "node-tooltip absolute -top-9 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center rounded-xl bg-card/95 border border-primary/50 px-2.5 py-1 text-[11px] font-bold text-foreground shadow-2xl backdrop-blur-md whitespace-nowrap pointer-events-none transition-opacity duration-300",
+          tooltipText ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <span className="text-primary mr-1">✦</span>
+        <span>{tooltipText || (props.tooltip as string) || ""}</span>
+      </div>
 
       {/* ── 1. Geometric Shape Node ──────────────────────────────── */}
       {type === "shape" && (
         <div
           className={cn(
-            "node-shape flex h-full w-full items-center justify-center p-2 shadow-md transition-colors",
+            "node-shape flex h-full w-full items-center justify-center p-2 transition-colors",
+            !isTransparentFill && "shadow-md",
             isCircle && "rounded-full",
             isPill && "rounded-full",
             !isCircle && !isPill && !isDiamond && !isTriangle && "rounded-xl",
@@ -189,7 +204,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
           ) : (
             <span
               className={cn(
-                "text-xs font-bold text-foreground select-none text-center truncate max-w-full px-1",
+                "text-[10px] sm:text-[11px] font-bold text-foreground select-none text-center leading-tight max-w-full px-0.5",
                 isDiamond && "-rotate-45"
               )}
             >
@@ -202,23 +217,31 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {/* ── 2. Math Formula Node (KaTeX) ─────────────────────────── */}
       {type === "math" && (
         <div
-          className="node-shape flex h-full w-full flex-col justify-between rounded-xl bg-card/95 p-3 shadow-lg backdrop-blur-md transition-colors"
+          className={cn(
+            "node-shape flex h-full w-full flex-col rounded-xl p-2.5 transition-colors",
+            isTransparentFill
+              ? "bg-transparent shadow-none"
+              : "bg-card/95 shadow-lg backdrop-blur-md",
+            props.showHeader === false ? "justify-center items-center" : "justify-between"
+          )}
           style={{
-            backgroundColor: fill,
+            backgroundColor: fill || (isTransparentFill ? "transparent" : undefined),
             border: strokeWidth > 0 ? `${strokeWidth}px solid ${stroke}` : "none",
           }}
         >
-          <div className="flex items-center justify-between mb-1 pb-1 border-b border-border/50 text-[10px] font-bold text-primary uppercase tracking-wider shrink-0">
-            <div className="flex items-center gap-1.5 truncate">
-              <Sigma className="size-3 shrink-0" />
-              <span className="truncate">{label}</span>
+          {props.showHeader !== false && (
+            <div className="flex items-center justify-between mb-1 pb-1 border-b border-border/50 text-[10px] font-bold text-primary uppercase tracking-wider shrink-0 w-full">
+              <div className="flex items-center gap-1.5 truncate">
+                <Sigma className="size-3 shrink-0" />
+                <span className="truncate">{label}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {isEditingInline && inlineEditorContent ? (
             inlineEditorContent
           ) : (
-            <div className="flex flex-1 items-center justify-center overflow-x-auto text-xs py-0.5 font-semibold text-foreground">
+            <div className="flex flex-1 items-center justify-center overflow-x-auto text-xs py-0.5 font-semibold text-foreground w-full">
               <MarkdownView inline content={`$${content || label}$`} />
             </div>
           )}
@@ -228,23 +251,37 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {/* ── 3. Rich Text Node (Markdown) ─────────────────────────── */}
       {type === "text" && (
         <div
-          className="node-shape flex h-full w-full flex-col justify-between rounded-xl bg-card/95 p-3 shadow-md backdrop-blur-md transition-colors"
+          className={cn(
+            "node-shape flex h-full w-full flex-col rounded-xl p-2.5 transition-colors",
+            isTransparentFill
+              ? "bg-transparent shadow-none"
+              : "bg-card/95 shadow-md backdrop-blur-md",
+            props.showHeader === false ? "justify-start" : "justify-between",
+            props.align === "center" ? "text-center" : props.align === "right" ? "text-right" : "text-left"
+          )}
           style={{
-            backgroundColor: fill,
+            backgroundColor: fill || (isTransparentFill ? "transparent" : undefined),
             border: strokeWidth > 0 ? `${strokeWidth}px solid ${stroke}` : "none",
           }}
         >
-          <div className="flex items-center justify-between mb-1 pb-1 border-b border-border/50 text-[10px] font-bold text-muted-foreground uppercase tracking-wider shrink-0">
-            <div className="flex items-center gap-1.5 truncate">
-              <FileText className="size-3 text-primary shrink-0" />
-              <span className="truncate">{label}</span>
+          {props.showHeader !== false && (
+            <div className="flex items-center justify-between mb-1 pb-1 border-b border-border/50 text-[10px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 w-full">
+              <div className="flex items-center gap-1.5 truncate">
+                <FileText className="size-3 text-primary shrink-0" />
+                <span className="truncate">{label}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {isEditingInline && inlineEditorContent ? (
             inlineEditorContent
           ) : (
-            <div className="flex-1 text-xs leading-relaxed overflow-y-auto pr-1 text-foreground">
+            <div
+              className={cn(
+                "flex-1 text-xs leading-relaxed text-foreground",
+                props.overflow === "visible" ? "overflow-visible" : "overflow-hidden"
+              )}
+            >
               <MarkdownView content={content || label} />
             </div>
           )}
@@ -279,7 +316,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
           {isEditingInline && inlineEditorContent ? (
             inlineEditorContent
           ) : (
-            <span className="text-[11px] font-bold text-foreground mt-1 text-center truncate max-w-full px-1">
+            <span className="text-[11px] font-bold text-foreground mt-1 text-center break-words line-clamp-2 leading-tight max-w-full px-1">
               {label}
             </span>
           )}
@@ -302,7 +339,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
           {isEditingInline && inlineEditorContent ? (
             inlineEditorContent
           ) : (
-            <span className="text-xs font-bold text-foreground text-center truncate max-w-full px-1">
+            <span className="text-xs font-bold text-foreground text-center break-words line-clamp-2 leading-tight max-w-full px-1">
               {label}
             </span>
           )}
