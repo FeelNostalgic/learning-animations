@@ -41,6 +41,7 @@ next-env.d.ts
 
 # mcp
 .agents/mcp_config.json
+opencode.json
 
 # playwright (tests)
 /playwright-report/*
@@ -54,3 +55,4 @@ test_output*.txt
 
 # temp
 screenshots/*
+
