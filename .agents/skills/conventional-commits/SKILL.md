@@ -90,7 +90,7 @@ Is it CI/CD?                              → ci:
 Is it dependency updates?                 → chore:
 Is it a performance improvement?          → perf:
 Does it change the build system?          → build:
-Is it an agent skill change?              → skill:
+Is it an ai agent/mcp configuration change? → ai:
 None of the above?                        → No prefix (no version bump)
 ```
 
@@ -111,6 +111,7 @@ ci: update Node.js version in workflow
 chore: update dependencies
 perf: lazy-load dashboard charts
 build: update next.config for turbopack
+ai: update ai agent skills, mcp configs, settings, opencode.json, AGENTS.md
 ```
 
 ### Minor commits
