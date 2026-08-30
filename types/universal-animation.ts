@@ -81,6 +81,7 @@ export interface UniversalConnector {
   color?: string
   strokeWidth?: number
   label?: string
+  labelPosition?: number
   ariaLabel?: string
 }
 

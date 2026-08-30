@@ -15,12 +15,14 @@ describe("StudioPlaybackController", () => {
     {
       id: "step-1",
       label: "Paso 1",
+      description: "Descripción del paso 1",
       duration: 1.0,
       actions: [],
     },
     {
       id: "step-2",
       label: "Paso 2",
+      description: "Descripción del paso 2",
       duration: 1.0,
       actions: [],
     },
