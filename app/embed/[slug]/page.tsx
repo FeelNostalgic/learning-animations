@@ -22,7 +22,7 @@ export async function generateMetadata({
     return { title: `${res.data.title} (Embed)` }
   }
 
-  return { title: "Embed Animación" }
+  return { title: "Embed animación" }
 }
 
 type StaticSlug = keyof typeof animationComponentMap

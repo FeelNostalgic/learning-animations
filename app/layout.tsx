@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Animaciones Educativas | Simulador de Redes",
+  title: "Animaciones educativas | Simulador de redes",
   description: "Visualiza conceptos y protocolos de redes paso a paso de forma interactiva.",
 };
 

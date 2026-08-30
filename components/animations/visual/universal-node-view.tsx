@@ -120,9 +120,10 @@ export const UniversalNodeView = memo(function UniversalNodeView({
 
   return (
     <div
+      data-node-id={node.id}
       onClick={onClick}
       className={cn(
-        "relative flex select-none transition-all duration-300",
+        "universal-node-view relative flex select-none transition-all duration-300",
         (isCircle || isPill) && "rounded-full",
         isRounded && "rounded-xl",
         isDiamond && "rounded-md",
@@ -139,16 +140,29 @@ export const UniversalNodeView = memo(function UniversalNodeView({
           : undefined,
       }}
     >
+      {/* ── GSAP Target Ring Overlay ──────────────────────────────── */}
+      <div
+        className={cn(
+          "ring pointer-events-none absolute inset-0 opacity-0 border-2 border-primary",
+          (isCircle || isPill) && "rounded-full",
+          isRounded && "rounded-xl",
+          isDiamond && "rounded-md"
+        )}
+      />
+
       {/* ── Active Live Badge Overlay ─────────────────────────────── */}
       {badgeText && (
-        <div className="absolute -top-3 -right-3 z-30 flex items-center justify-center rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-extrabold text-primary-foreground shadow-lg border border-primary-foreground/20 animate-bounce">
+        <div
+          data-badge-id={node.id}
+          className="node-badge absolute -top-3 -right-3 z-30 flex items-center justify-center rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-extrabold text-primary-foreground shadow-lg border border-primary-foreground/20 animate-bounce"
+        >
           {badgeText}
         </div>
       )}
 
       {/* ── Active Live Tooltip Callout ───────────────────────────── */}
       {tooltipText && (
-        <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center rounded-xl bg-card/95 border border-primary/50 px-2.5 py-1 text-[11px] font-bold text-foreground shadow-2xl backdrop-blur-md whitespace-nowrap pointer-events-none">
+        <div className="node-tooltip absolute -top-9 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center rounded-xl bg-card/95 border border-primary/50 px-2.5 py-1 text-[11px] font-bold text-foreground shadow-2xl backdrop-blur-md whitespace-nowrap pointer-events-none">
           <span className="text-primary mr-1">✦</span>
           <span>{tooltipText}</span>
         </div>
@@ -158,7 +172,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {type === "shape" && (
         <div
           className={cn(
-            "flex h-full w-full items-center justify-center p-2 shadow-md transition-colors",
+            "node-shape flex h-full w-full items-center justify-center p-2 shadow-md transition-colors",
             isCircle && "rounded-full",
             isPill && "rounded-full",
             !isCircle && !isPill && !isDiamond && !isTriangle && "rounded-xl",
@@ -188,7 +202,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {/* ── 2. Math Formula Node (KaTeX) ─────────────────────────── */}
       {type === "math" && (
         <div
-          className="flex h-full w-full flex-col justify-between rounded-xl bg-card/95 p-3 shadow-lg backdrop-blur-md transition-colors"
+          className="node-shape flex h-full w-full flex-col justify-between rounded-xl bg-card/95 p-3 shadow-lg backdrop-blur-md transition-colors"
           style={{
             backgroundColor: fill,
             border: strokeWidth > 0 ? `${strokeWidth}px solid ${stroke}` : "none",
@@ -214,7 +228,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {/* ── 3. Rich Text Node (Markdown) ─────────────────────────── */}
       {type === "text" && (
         <div
-          className="flex h-full w-full flex-col justify-between rounded-xl bg-card/95 p-3 shadow-md backdrop-blur-md transition-colors"
+          className="node-shape flex h-full w-full flex-col justify-between rounded-xl bg-card/95 p-3 shadow-md backdrop-blur-md transition-colors"
           style={{
             backgroundColor: fill,
             border: strokeWidth > 0 ? `${strokeWidth}px solid ${stroke}` : "none",
@@ -240,7 +254,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {/* ── 4. Image Node (R2 / URL) ──────────────────────────────── */}
       {type === "image" && (
         <div
-          className="flex h-full w-full flex-col items-center justify-between rounded-2xl p-1 transition-colors"
+          className="node-shape flex h-full w-full flex-col items-center justify-between rounded-2xl p-1 transition-colors"
           style={{
             backgroundColor: fill,
             border: strokeWidth > 0 ? `${strokeWidth}px solid ${stroke}` : "none",
@@ -275,7 +289,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {/* ── 5. Network Node ───────────────────────────────────────── */}
       {type === "network" && (
         <div
-          className="flex h-full w-full flex-col items-center justify-center rounded-2xl p-2 shadow-md transition-colors"
+          className="node-shape flex h-full w-full flex-col items-center justify-center rounded-2xl p-2 shadow-md transition-colors"
           style={{
             backgroundColor: fill,
             border: strokeWidth > 0 ? `${strokeWidth}px solid ${stroke}` : "none",
@@ -304,7 +318,7 @@ export const UniversalNodeView = memo(function UniversalNodeView({
       {/* ── 6. Container Node ─────────────────────────────────────── */}
       {type === "container" && (
         <div
-          className="flex h-full w-full flex-col justify-between rounded-2xl p-3 shadow-inner transition-colors"
+          className="node-shape flex h-full w-full flex-col justify-between rounded-2xl p-3 shadow-inner transition-colors"
           style={{
             backgroundColor: fill || "rgba(15, 23, 42, 0.35)",
             border: strokeWidth > 0 ? `${strokeWidth}px dashed ${stroke || "var(--border)"}` : "none",

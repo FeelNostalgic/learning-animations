@@ -23,13 +23,13 @@ const NAV_ITEMS: NavItem[] = [
     matchPath: (p) => p === "/animations" || p.startsWith("/animations/"),
   },
   {
-    label: "Mis Animaciones",
+    label: "Mis animaciones",
     href: "/my-animations",
     icon: Sparkles,
     matchPath: (p) => p === "/my-animations" || p.startsWith("/my-animations/"),
   },
   {
-    label: "Editor Studio",
+    label: "Editor studio",
     href: "/builder",
     icon: PenTool,
     matchPath: (p) => p === "/builder" || p.startsWith("/builder/"),

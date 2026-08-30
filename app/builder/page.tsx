@@ -66,7 +66,7 @@ const DISCIPLINES: { key: DisciplineType; label: string }[] = [
 ]
 
 const INITIAL_UNIVERSAL_ANIMATION: UniversalAnimationData = {
-  title: "Concepto Educativo Interactivo",
+  title: "Concepto educativo interactivo",
   description: "Explicación paso a paso de conceptos abstractos con KaTeX y trayectorias.",
   discipline: "math",
   topic: "Cálculo y Álgebra",
@@ -291,9 +291,9 @@ function BuilderContent() {
   // Reset to brand new animation
   const handleNewAnimation = () => {
     setAnimationId(null)
-    setTitle("Nueva Animación Educativa")
+    setTitle("Nueva animación educativa")
     setDiscipline("general")
-    setTopic("Tema Personalizado")
+    setTopic("Tema personalizado")
     setTags(["educación"])
     setDescription("Descripción pedagógica...")
     setDifficulty("beginner")
@@ -413,7 +413,7 @@ function BuilderContent() {
       selected: true,
     }
 
-    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(clonedNode))
+    setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), clonedNode])
     setSelectedNodeId(newId)
     setSelectedEdgeId(null)
   }
@@ -462,7 +462,7 @@ function BuilderContent() {
     const newStepIndex = steps.length + 1
     const newStep: UniversalStep = {
       id: `step-${Date.now()}`,
-      label: `${newStepIndex}. Nuevo Paso`,
+      label: `${newStepIndex}. Nuevo paso`,
       description: "Descripción de las acciones que ocurren en este paso.",
       duration: 2.0,
       actions: [],

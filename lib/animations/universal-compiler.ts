@@ -170,25 +170,63 @@ export function compileUniversalTimeline(
     }
   }
 
-  const safeSet = (selector: string, vars: gsap.TweenVars) => {
-    const targets = safeQ(selector)
-    if (targets) {
-      gsap.set(targets, vars)
+  // Multi-fallback query that matches React Flow nodes, DOM data attributes, and SVG IDs
+  const resolveNodeTarget = (id: string, subSelector?: string): any => {
+    const candidates = subSelector
+      ? [
+          `[data-node-id="${id}"] ${subSelector}`,
+          `.react-flow__node[data-id="${id}"] ${subSelector}`,
+          `#node-${id} ${subSelector}`,
+          `[data-id="${id}"] ${subSelector}`,
+        ]
+      : [
+          `[data-node-id="${id}"]`,
+          `.react-flow__node[data-id="${id}"]`,
+          `#node-${id}`,
+          `[data-id="${id}"]`,
+        ]
+
+    for (const sel of candidates) {
+      const el = safeQ(sel)
+      if (el) return el
+    }
+    return safeQ(candidates[0])
+  }
+
+  const resolveEdgeTarget = (id: string): any => {
+    const candidates = [
+      `.react-flow__edge[data-id="${id}"] path.react-flow__edge-path`,
+      `.react-flow__edge[data-id="${id}"] path`,
+      `#connector-path-${id}`,
+      `#conn-${id}`,
+      `[data-edge-id="${id}"] path`,
+    ]
+    for (const sel of candidates) {
+      const el = safeQ(sel)
+      if (el) return el
+    }
+    return safeQ(candidates[0])
+  }
+
+  const safeSet = (target: any, vars: gsap.TweenVars) => {
+    const els = typeof target === "string" ? safeQ(target) : target
+    if (els) {
+      gsap.set(els, vars)
     }
   }
 
-  const safeTo = (selector: string, vars: gsap.TweenVars, position?: gsap.Position) => {
-    const targets = safeQ(selector)
-    if (targets) {
-      tl.to(targets, vars, position)
+  const safeTo = (target: any, vars: gsap.TweenVars, position?: gsap.Position) => {
+    const els = typeof target === "string" ? safeQ(target) : target
+    if (els) {
+      tl.to(els, vars, position)
     }
   }
 
   // 1. Initial State Setup
   nodes.forEach((node) => {
-    safeSet(`#node-${node.id}`, {
-      x: node.x,
-      y: node.y,
+    // Set initial transform state on the node view
+    const nodeTarget = resolveNodeTarget(node.id)
+    safeSet(nodeTarget, {
       scale: node.scale ?? 1,
       rotation: node.rotation ?? 0,
       opacity: node.opacity ?? 1,
@@ -197,19 +235,22 @@ export function compileUniversalTimeline(
     const strokeWidth = node.strokeWidth !== undefined ? node.strokeWidth : 1.5
     const hasStroke = strokeWidth > 0 && node.stroke !== "none" && node.stroke !== "transparent"
 
-    safeSet(`#node-${node.id} .node-shape`, {
+    const shapeTarget = resolveNodeTarget(node.id, ".node-shape")
+    safeSet(shapeTarget, {
       stroke: hasStroke ? node.stroke || C.idle : "none",
       strokeWidth: hasStroke ? strokeWidth : 0,
       fill: node.fill || "transparent",
       opacity: node.opacity ?? 1,
     })
 
-    safeSet(`#node-${node.id} .ring`, {
+    const ringTarget = resolveNodeTarget(node.id, ".ring")
+    safeSet(ringTarget, {
       scale: 1,
       opacity: 0,
     })
 
-    safeSet(`#badge-${node.id}`, {
+    const badgeTarget = resolveNodeTarget(node.id, ".node-badge") || safeQ(`#badge-${node.id}`)
+    safeSet(badgeTarget, {
       opacity: 0,
       y: 0,
     })
@@ -217,7 +258,8 @@ export function compileUniversalTimeline(
 
   // Initial connector states
   connectors.forEach((conn: any) => {
-    safeSet(`#conn-${conn.id}`, {
+    const edgeTarget = resolveEdgeTarget(conn.id)
+    safeSet(edgeTarget, {
       stroke: conn.color ? C[conn.color] || conn.color : C.idle,
       strokeWidth: conn.strokeWidth || 2,
       opacity: 1,
@@ -276,13 +318,25 @@ export function compileUniversalTimeline(
                 duration: actionDuration,
                 ease,
               }
-              if (action.transform.x !== undefined) targetVars.x = action.transform.x
-              if (action.transform.y !== undefined) targetVars.y = action.transform.y
+              const baseNode = nodeMap.get(action.targetId)
+              if (action.transform.x !== undefined && baseNode) {
+                targetVars.x = action.transform.x - baseNode.x
+              } else if (action.transform.x !== undefined) {
+                targetVars.x = action.transform.x
+              }
+
+              if (action.transform.y !== undefined && baseNode) {
+                targetVars.y = action.transform.y - baseNode.y
+              } else if (action.transform.y !== undefined) {
+                targetVars.y = action.transform.y
+              }
+
               if (action.transform.scale !== undefined) targetVars.scale = action.transform.scale
               if (action.transform.rotation !== undefined)
                 targetVars.rotation = action.transform.rotation
 
-              safeTo(`#node-${action.targetId}`, targetVars, actionStart)
+              const target = resolveNodeTarget(action.targetId)
+              safeTo(target, targetVars, actionStart)
             }
             break
           }
@@ -301,17 +355,20 @@ export function compileUniversalTimeline(
                 styleVars.strokeWidth = action.style.strokeWidth
               if (action.style.opacity !== undefined) styleVars.opacity = action.style.opacity
 
-              safeTo(`#node-${action.targetId} .node-shape`, styleVars, actionStart)
+              const shapeTarget = resolveNodeTarget(action.targetId, ".node-shape")
+              safeTo(shapeTarget, styleVars, actionStart)
             }
             break
           }
 
           case "highlight": {
             if (action.targetId) {
+              const shapeTarget = resolveNodeTarget(action.targetId, ".node-shape") || resolveNodeTarget(action.targetId)
               safeTo(
-                `#node-${action.targetId} .node-shape`,
+                shapeTarget,
                 {
                   stroke: colorVal,
+                  borderColor: colorVal,
                   strokeWidth: 3,
                   opacity: 1,
                   duration: actionDuration,
@@ -325,8 +382,9 @@ export function compileUniversalTimeline(
 
           case "pulse": {
             if (action.targetId) {
+              const ringTarget = resolveNodeTarget(action.targetId, ".ring") || resolveNodeTarget(action.targetId)
               safeTo(
-                `#node-${action.targetId} .ring`,
+                ringTarget,
                 {
                   scale: 1.6,
                   opacity: 0.7,
@@ -344,8 +402,9 @@ export function compileUniversalTimeline(
 
           case "fade": {
             if (action.targetId) {
+              const target = resolveNodeTarget(action.targetId)
               safeTo(
-                `#node-${action.targetId}`,
+                target,
                 {
                   opacity: 0.25,
                   duration: actionDuration,
@@ -359,8 +418,9 @@ export function compileUniversalTimeline(
 
           case "badge": {
             if (action.targetId) {
+              const badgeTarget = resolveNodeTarget(action.targetId, ".node-badge") || safeQ(`#badge-${action.targetId}`)
               safeTo(
-                `#badge-${action.targetId}`,
+                badgeTarget,
                 {
                   opacity: 1,
                   y: -12,
@@ -374,8 +434,9 @@ export function compileUniversalTimeline(
           }
 
           case "tooltip": {
+            const tooltipTarget = safeQ(`[data-tooltip-id="${action.id}"]`) || safeQ(`#tooltip-${action.id}`)
             safeTo(
-              `#tooltip-${action.id}`,
+              tooltipTarget,
               {
                 opacity: 1,
                 y: 0,
@@ -404,9 +465,11 @@ export function compileUniversalTimeline(
               const moveDuration = Math.max(0.2, actionDuration - 0.16)
               const hideDuration = 0.1
 
+              const pktTarget = safeQ(`[data-packet-id="${action.id}"]`) || safeQ(`#pkt-${action.id}`)
+
               // 1. Appear at source
               safeTo(
-                `#pkt-${action.id}`,
+                pktTarget,
                 {
                   x: fromNode.x,
                   y: fromNode.y,
@@ -421,7 +484,7 @@ export function compileUniversalTimeline(
               waypoints.forEach((pt, ptIdx) => {
                 if (ptIdx > 0) {
                   safeTo(
-                    `#pkt-${action.id}`,
+                    pktTarget,
                     {
                       x: pt.x,
                       y: pt.y,
@@ -435,7 +498,7 @@ export function compileUniversalTimeline(
 
               // 3. Hide at target
               safeTo(
-                `#pkt-${action.id}`,
+                pktTarget,
                 {
                   opacity: 0,
                   duration: hideDuration,
@@ -447,8 +510,9 @@ export function compileUniversalTimeline(
           }
 
           case "path_draw": {
+            const edgeTarget = action.targetId ? resolveEdgeTarget(action.targetId) : safeQ(`#draw-${action.id}`)
             safeTo(
-              `#draw-${action.id}`,
+              edgeTarget,
               {
                 opacity: 1,
                 strokeDashoffset: 0,
@@ -462,8 +526,9 @@ export function compileUniversalTimeline(
 
           case "math_eval": {
             if (action.targetId) {
+              const target = resolveNodeTarget(action.targetId)
               safeTo(
-                `#node-${action.targetId}`,
+                target,
                 {
                   scale: 1.15,
                   duration: actionDuration * 0.4,

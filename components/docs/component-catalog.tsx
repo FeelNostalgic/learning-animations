@@ -59,7 +59,7 @@ export function ComponentCatalog() {
     // 1. FORMAS GEOMÉTRICAS
     {
       id: "comp-shape",
-      name: "Nodos de Formas Geométricas",
+      name: "Nodos de formas geométricas",
       category: "geometry",
       icon: Circle,
       summary: "Círculos, rectángulos redondeados, diamantes, píldoras y triángulos",
@@ -76,7 +76,7 @@ export function ComponentCatalog() {
       jsonSnippet: {
         id: "node-circle-1",
         type: "shape",
-        label: "Estado Inicial",
+        label: "Estado inicial",
         x: 300,
         y: 200,
         width: 80,
@@ -108,7 +108,7 @@ export function ComponentCatalog() {
     // 2. FÓRMULAS KATEX
     {
       id: "comp-math",
-      name: "Nodos Matemáticos KaTeX",
+      name: "Nodos matemáticos KaTeX",
       category: "math",
       icon: Sigma,
       summary: "Renderizado algebraico de alta calidad con sintaxis LaTeX",
@@ -124,7 +124,7 @@ export function ComponentCatalog() {
       jsonSnippet: {
         id: "node-math-1",
         type: "math",
-        label: "Integral Definida",
+        label: "Integral definida",
         content: "\\int_a^b f(x)\\,dx = F(b) - F(a)",
         x: 400,
         y: 250,
@@ -138,7 +138,7 @@ export function ComponentCatalog() {
         <div className="flex items-center justify-center py-4">
           <div className="rounded-xl border-2 border-purple-500 bg-card p-3 shadow-lg min-w-[240px] text-center">
             <div className="text-[10px] font-bold uppercase tracking-wider text-purple-500 border-b border-border/50 pb-1 mb-2">
-              Integral Definida
+              Integral definida
             </div>
             <MarkdownView inline content="$\int_a^b f(x)\,dx = F(b) - F(a)$" />
           </div>
@@ -149,7 +149,7 @@ export function ComponentCatalog() {
     // 3. TARJETA MARKDOWN
     {
       id: "comp-text",
-      name: "Tarjetas de Texto Enriquecido / Markdown",
+      name: "Tarjetas de texto enriquecido / markdown",
       category: "text",
       icon: FileText,
       summary: "Notas explicativas con negrita, listas, código y fórmulas inline",
@@ -164,7 +164,7 @@ export function ComponentCatalog() {
       jsonSnippet: {
         id: "node-text-1",
         type: "text",
-        label: "Concepto Clave",
+        label: "Concepto clave",
         content: "**Principio de Bernoulli**:\nEl aumento de velocidad reduce la presión interna del fluido.",
         x: 500,
         y: 300,
@@ -179,7 +179,7 @@ export function ComponentCatalog() {
           <div className="rounded-xl border border-border bg-card p-3 shadow-md max-w-xs text-xs space-y-1">
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary border-b border-border/40 pb-1">
               <FileText className="size-3" />
-              <span>Concepto Clave</span>
+              <span>Concepto clave</span>
             </div>
             <p className="text-muted-foreground leading-relaxed pt-1">
               <strong className="text-foreground">Principio de Bernoulli:</strong> El aumento de velocidad reduce la presión interna del fluido.
@@ -192,7 +192,7 @@ export function ComponentCatalog() {
     // 4. IMÁGENES
     {
       id: "comp-image",
-      name: "Nodos de Imagen (Cloudflare R2 / URL Externa)",
+      name: "Nodos de imagen (Cloudflare R2 / URL externa)",
       category: "image",
       icon: ImageIcon,
       summary: "Imágenes vectoriales SVG, PNG, WebP, JPEG o GIF",
@@ -229,7 +229,7 @@ export function ComponentCatalog() {
     // 5. DISPOSITIVOS DE RED
     {
       id: "comp-network",
-      name: "Nodos de Redes y Computación",
+      name: "Nodos de redes y computación",
       category: "network",
       icon: Laptop,
       summary: "Hosts (PC), Switches L2, Routers L3, Servidores y Nubes",
@@ -273,7 +273,7 @@ export function ComponentCatalog() {
     // 6. CONTENEDOR / GRUPO
     {
       id: "comp-container",
-      name: "Contenedores / Grupos de Subsistema",
+      name: "Contenedores / grupos de subsistema",
       category: "container",
       icon: Box,
       summary: "Cajas agrupadoras translúcidas y no bloqueantes",
@@ -313,7 +313,7 @@ export function ComponentCatalog() {
     // 7. CONECTORES & FLECHAS
     {
       id: "comp-connector",
-      name: "Conectores, Curvas Bézier y Flechas",
+      name: "Conectores, curvas Bézier y flechas",
       category: "connector",
       icon: Spline,
       summary: "Líneas Bézier, rectas u ortogonales con etiquetas arrastrables",
@@ -377,7 +377,7 @@ export function ComponentCatalog() {
               : "bg-card border border-border text-muted-foreground hover:text-foreground"
           }`}
         >
-          Todos los Componentes ({COMPONENTS.length})
+          Todos los componentes ({COMPONENTS.length})
         </button>
         <button
           onClick={() => setSelectedCategory("geometry")}
@@ -407,7 +407,7 @@ export function ComponentCatalog() {
               : "bg-card border border-border text-muted-foreground hover:text-foreground"
           }`}
         >
-          Texto Markdown
+          Texto markdown
         </button>
         <button
           onClick={() => setSelectedCategory("image")}
@@ -447,7 +447,7 @@ export function ComponentCatalog() {
               : "bg-card border border-border text-muted-foreground hover:text-foreground"
           }`}
         >
-          Conectores & Flechas
+          Conectores & flechas
         </button>
       </div>
 
@@ -515,7 +515,7 @@ export function ComponentCatalog() {
 
                 <div className="space-y-1.5">
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Propiedades de Configuración
+                    Propiedades de configuración
                   </h4>
                   <div className="overflow-x-auto rounded-xl border border-border/60">
                     <table className="w-full text-left text-[10px]">

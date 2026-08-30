@@ -20,15 +20,15 @@ interface MathSnippet {
 
 const KATEX_CATEGORIES: { name: string; items: MathSnippet[] }[] = [
   {
-    name: "Álgebra y Funciones",
+    name: "Álgebra y funciones",
     items: [
       {
-        title: "Fórmula Cuadrática",
+        title: "Fórmula cuadrática",
         code: "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
         description: "Solución general para ecuaciones de segundo grado",
       },
       {
-        title: "Logaritmos y Exponentes",
+        title: "Logaritmos y exponentes",
         code: "\\log_b(x \\cdot y) = \\log_b(x) + \\log_b(y)",
         description: "Propiedad aditiva de logaritmos",
       },
@@ -40,55 +40,55 @@ const KATEX_CATEGORIES: { name: string; items: MathSnippet[] }[] = [
     ],
   },
   {
-    name: "Cálculo y Análisis",
+    name: "Cálculo y análisis",
     items: [
       {
-        title: "Definición de Derivada",
+        title: "Definición de derivada",
         code: "f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}",
         description: "Límite del cociente incremental",
       },
       {
-        title: "Teorema Fundamental del Cálculo",
+        title: "Teorema fundamental del cálculo",
         code: "\\int_a^b f(x)\\,dx = F(b) - F(a)",
         description: "Conexión entre derivación e integración",
       },
       {
-        title: "Integral Impropia Gaussiana",
+        title: "Integral impropia gaussiana",
         code: "\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}",
         description: "Distribución normal estándar",
       },
     ],
   },
   {
-    name: "Física y Ondas",
+    name: "Física y ondas",
     items: [
       {
-        title: "Ecuación de Onda",
+        title: "Ecuación de onda",
         code: "\\frac{\\partial^2 u}{\\partial t^2} = v^2 \\nabla^2 u",
         description: "Propagación de ondas electromagnéticas o acústicas",
       },
       {
-        title: "Ley de Gravitación Universal",
+        title: "Ley de gravitación universal",
         code: "F = G \\frac{m_1 m_2}{r^2}",
         description: "Fuerza gravitatoria entre dos masas puntuales",
       },
       {
-        title: "Principio de Incertidumbre",
+        title: "Principio de incertidumbre",
         code: "\\Delta x \\cdot \\Delta p \\ge \\frac{\\hbar}{2}",
         description: "Límite cuántico de precisión",
       },
     ],
   },
   {
-    name: "Redes y Computación",
+    name: "Redes y computación",
     items: [
       {
-        title: "Tiempo de Transmisión de Paquete",
+        title: "Tiempo de transmisión de paquete",
         code: "T_{\\text{tx}} = \\frac{L}{R} = \\frac{\\text{Longitud (bits)}}{\\text{Tasa (bps)}}",
         description: "Tiempo para inyectar un paquete en el enlace",
       },
       {
-        title: "Retardo de Propagación",
+        title: "Retardo de propagación",
         code: "T_{\\text{prop}} = \\frac{d}{s} = \\frac{\\text{Distancia (m)}}{\\text{Velocidad de señal (m/s)}}",
         description: "Tiempo de viaje de la señal por el medio físico",
       },
@@ -100,15 +100,15 @@ const KATEX_CATEGORIES: { name: string; items: MathSnippet[] }[] = [
     ],
   },
   {
-    name: "Matrices y Álgebra Lineal",
+    name: "Matrices y álgebra lineal",
     items: [
       {
-        title: "Matriz de Transformación 2D",
+        title: "Matriz de transformación 2D",
         code: "\\begin{pmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{pmatrix}",
         description: "Matriz de rotación en el plano cartesiano",
       },
       {
-        title: "Ecuación de Autovalores",
+        title: "Ecuación de autovalores",
         code: "A\\mathbf{v} = \\lambda\\mathbf{v}",
         description: "Vectores y valores propios de una matriz",
       },
@@ -143,7 +143,7 @@ export function KatexCheatSheet() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">
-                Editor KaTeX en Vivo (Playground)
+                Editor KaTeX en vivo (playground)
               </h3>
               <p className="text-[11px] text-muted-foreground">
                 Escribe cualquier fórmula matemática para probar el renderizado instantáneo
@@ -174,7 +174,7 @@ export function KatexCheatSheet() {
           <div className="space-y-2 flex flex-col">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Resultado Renderizado
+                Resultado renderizado
               </label>
               <button
                 onClick={() => handleCopy(customMath)}

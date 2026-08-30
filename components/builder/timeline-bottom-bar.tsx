@@ -179,14 +179,14 @@ export function TimelineBottomBar({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-foreground">
             <Clock className="h-3.5 w-3.5 text-primary" />
-            <span>Línea de Tiempo</span>
+            <span>Línea de tiempo</span>
           </div>
           <span className="text-muted-foreground">|</span>
           <span className="font-mono text-muted-foreground">
             {steps.length} {steps.length === 1 ? "paso" : "pasos"}
           </span>
           <span className="rounded bg-accent/50 px-2 py-0.5 font-mono font-semibold text-primary">
-            Duración Total: {totalDuration.toFixed(1)}s
+            Duración total: {totalDuration.toFixed(1)}s
           </span>
         </div>
 
@@ -196,7 +196,7 @@ export function TimelineBottomBar({
           className="h-6 gap-1 text-[11px] font-semibold px-2.5"
         >
           <Plus className="h-3.5 w-3.5" />
-          Añadir Paso
+          Añadir paso
         </Button>
       </div>
 
@@ -262,14 +262,18 @@ export function TimelineBottomBar({
                     />
 
                     {steps.length > 1 && (
-                      <Trash2
-                        className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 shrink-0 cursor-pointer ml-0.5"
+                      <button
+                        type="button"
+                        title="Eliminar paso"
+                        aria-label="Eliminar paso"
+                        className="opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 shrink-0 cursor-pointer ml-0.5"
                         onClick={(e) => {
                           e.stopPropagation()
                           onDeleteStep(idx)
                         }}
-                        title="Eliminar paso"
-                      />
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                      </button>
                     )}
                   </div>
                 </div>

@@ -85,17 +85,17 @@ export function AppHeader() {
   if (isOfficialDetail) {
     breadcrumbs.push({ label: officialAnim?.title || dynamicTitle || "Animación" })
   } else if (isMyAnimationsIndex) {
-    breadcrumbs.push({ label: "Mis Animaciones" })
+    breadcrumbs.push({ label: "Mis animaciones" })
   } else if (isMyAnimationDetail) {
-    breadcrumbs.push({ label: "Mis Animaciones", href: "/my-animations" })
+    breadcrumbs.push({ label: "Mis animaciones", href: "/my-animations" })
     breadcrumbs.push({ label: dynamicTitle || "Cargando animación..." })
   } else if (isBuilder) {
-    breadcrumbs.push({ label: "Editor Studio" })
-    if (dynamicTitle && dynamicTitle !== "Nueva Animación de Red") {
+    breadcrumbs.push({ label: "Editor studio" })
+    if (dynamicTitle && dynamicTitle !== "Nueva animación de red") {
       breadcrumbs.push({ label: dynamicTitle })
     }
   } else if (isDocs) {
-    breadcrumbs.push({ label: "Showcase & Wiki" })
+    breadcrumbs.push({ label: "Showcase & wiki" })
   }
 
   return (
@@ -132,7 +132,7 @@ export function AppHeader() {
         <Link
           href="/docs/showcase"
           className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card/80 px-2.5 py-1.5 text-xs font-semibold text-foreground hover:border-primary/50 hover:bg-accent/50 transition-all cursor-pointer shadow-xs"
-          title="Ver Wiki & Showcase de componentes y animaciones"
+          title="Ver wiki & showcase de componentes y animaciones"
         >
           <BookOpen className="h-3.5 w-3.5 text-primary" />
           <span className="hidden sm:inline">Wiki / Docs</span>
@@ -162,7 +162,7 @@ export function AppHeader() {
               <DropdownMenuItem asChild>
                 <Link href="/my-animations" className="flex items-center gap-2 w-full cursor-pointer">
                   <Sparkles className="size-3.5 text-primary" />
-                  <span>Mis Animaciones</span>
+                  <span>Mis animaciones</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -173,7 +173,7 @@ export function AppHeader() {
                 className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
               >
                 <LogOut className="size-3.5 mr-2" />
-                <span>Cerrar Sesión</span>
+                <span>Cerrar sesión</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -185,14 +185,14 @@ export function AppHeader() {
               className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
             >
               <LogIn className="h-3.5 w-3.5 text-primary" />
-              <span>Iniciar Sesión</span>
+              <span>Iniciar sesión</span>
             </Link>
             <Link
               href="/signup"
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-xs cursor-pointer"
             >
               <UserPlus className="h-3.5 w-3.5" />
-              <span>Crear Cuenta</span>
+              <span>Crear cuenta</span>
             </Link>
           </div>
         )}

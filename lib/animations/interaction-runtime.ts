@@ -78,15 +78,17 @@ export class InteractionRuntime {
     let finalValue = value
 
     if (typeof value === "number") {
+      let numValue = value
       const constraint = this.constraints.get(name)
       if (constraint) {
-        if (constraint.min !== undefined && finalValue < constraint.min) {
-          finalValue = constraint.min
+        if (constraint.min !== undefined && numValue < constraint.min) {
+          numValue = constraint.min
         }
-        if (constraint.max !== undefined && finalValue > constraint.max) {
-          finalValue = constraint.max
+        if (constraint.max !== undefined && numValue > constraint.max) {
+          numValue = constraint.max
         }
       }
+      finalValue = numValue
     }
 
     this.variables.set(name, finalValue)

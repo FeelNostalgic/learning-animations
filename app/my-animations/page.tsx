@@ -25,7 +25,7 @@ export default async function MyAnimationsPage() {
         <div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
             <Sparkles className="h-5 w-5 text-primary" />
-            <span>Mis Animaciones</span>
+            <span>Mis animaciones</span>
           </h1>
           <p className="text-muted-foreground mt-1 text-xs md:text-sm">
             Gestiona, visualiza, duplica y edita las animaciones interactivas que has creado.
@@ -37,7 +37,7 @@ export default async function MyAnimationsPage() {
           className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-95 cursor-pointer"
         >
           <Plus className="size-3.5" />
-          <span>Nueva Animación</span>
+          <span>Nueva animación</span>
         </Link>
       </div>
 

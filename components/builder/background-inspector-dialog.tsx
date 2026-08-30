@@ -36,23 +36,23 @@ interface BackgroundInspectorDialogProps {
 }
 
 const SOLID_PRESETS = [
-  { name: "Obsidiana Espacial", color: "#090D16", isDark: true },
-  { name: "Deep Slate", color: "#0F172A", isDark: true },
-  { name: "Midnight Navy", color: "#0A192F", isDark: true },
-  { name: "Dark Velvet", color: "#18122B", isDark: true },
-  { name: "Dark Emerald", color: "#06281E", isDark: true },
-  { name: "Alabastro Cálido", color: "#F8FAFC", isDark: false },
-  { name: "Blanco Puro", color: "#FFFFFF", isDark: false },
+  { name: "Obsidiana espacial", color: "#090D16", isDark: true },
+  { name: "Deep slate", color: "#0F172A", isDark: true },
+  { name: "Midnight navy", color: "#0A192F", isDark: true },
+  { name: "Dark velvet", color: "#18122B", isDark: true },
+  { name: "Dark emerald", color: "#06281E", isDark: true },
+  { name: "Alabastro cálido", color: "#F8FAFC", isDark: false },
+  { name: "Blanco puro", color: "#FFFFFF", isDark: false },
   { name: "Transparente", color: "transparent", isDark: false },
 ]
 
 const GRADIENT_PRESETS = [
-  { name: "Deep Nebula", from: "#090D16", to: "#1E1B4B", direction: "to-br" as const },
-  { name: "Midnight Ocean", from: "#0A192F", to: "#0F3A5D", direction: "to-b" as const },
-  { name: "Emerald Matrix", from: "#051F1A", to: "#0D4236", direction: "to-br" as const },
-  { name: "Warm Sunset", from: "#1E130C", to: "#4A2010", direction: "to-r" as const },
-  { name: "Cyber Twilight", from: "#150050", to: "#3F0071", direction: "to-r" as const },
-  { name: "Alabaster Mist", from: "#F8FAFC", to: "#E2E8F0", direction: "to-b" as const },
+  { name: "Deep nebula", from: "#090D16", to: "#1E1B4B", direction: "to-br" as const },
+  { name: "Midnight ocean", from: "#0A192F", to: "#0F3A5D", direction: "to-b" as const },
+  { name: "Emerald matrix", from: "#051F1A", to: "#0D4236", direction: "to-br" as const },
+  { name: "Warm sunset", from: "#1E130C", to: "#4A2010", direction: "to-r" as const },
+  { name: "Cyber twilight", from: "#150050", to: "#3F0071", direction: "to-r" as const },
+  { name: "Alabaster mist", from: "#F8FAFC", to: "#E2E8F0", direction: "to-b" as const },
 ]
 
 export function BackgroundInspectorDialog({
@@ -199,7 +199,7 @@ export function BackgroundInspectorDialog({
               <Palette className="size-5" />
             </div>
             <div>
-              <DialogTitle>Personalizar Fondo de Animación</DialogTitle>
+              <DialogTitle>Personalizar fondo de animación</DialogTitle>
               <DialogDescription>
                 Ajusta el color sólido con canal alpha, degradados o imágenes personalizadas para tu animación.
               </DialogDescription>
@@ -229,7 +229,7 @@ export function BackgroundInspectorDialog({
               <Sparkles className="size-3.5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-foreground">Previsualización de Contraste</p>
+              <p className="text-xs font-bold text-foreground">Previsualización de contraste</p>
               <p className="text-[10px] text-muted-foreground">Legibilidad del diagrama sobre este fondo</p>
             </div>
           </div>
@@ -244,7 +244,7 @@ export function BackgroundInspectorDialog({
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="solid" className="gap-1.5 text-xs">
               <SunMedium className="size-3.5" />
-              <span>Color Sólido</span>
+              <span>Color sólido</span>
             </TabsTrigger>
             <TabsTrigger value="gradient" className="gap-1.5 text-xs">
               <Sparkles className="size-3.5" />
@@ -261,7 +261,7 @@ export function BackgroundInspectorDialog({
             {/* Presets Grid */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Paletas Recomendadas
+                Paletas recomendadas
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {SOLID_PRESETS.map((p) => (
@@ -291,7 +291,7 @@ export function BackgroundInspectorDialog({
             <div className="grid grid-cols-2 gap-3 items-end">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Color Personalizado (Hex)
+                  Color personalizado (Hex)
                 </label>
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-background/80 p-1.5 shadow-xs">
                   <input
@@ -313,7 +313,7 @@ export function BackgroundInspectorDialog({
               {/* Alpha Channel Slider */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground">
-                  <span className="uppercase tracking-wider">Opacidad / Alpha</span>
+                  <span className="uppercase tracking-wider">Opacidad / alpha</span>
                   <span className="font-mono text-foreground">{solidAlpha}%</span>
                 </div>
                 <Slider
@@ -332,7 +332,7 @@ export function BackgroundInspectorDialog({
             {/* Gradient Presets */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Estilos de Degradado
+                Estilos de degradado
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {GRADIENT_PRESETS.map((g) => (
@@ -361,7 +361,7 @@ export function BackgroundInspectorDialog({
             {/* Custom From / To / Direction */}
             <div className="grid grid-cols-3 gap-2 items-end">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-muted-foreground">Color Inicial</label>
+                <label className="text-[10px] font-bold uppercase text-muted-foreground">Color inicial</label>
                 <div className="flex items-center gap-1.5 rounded-xl border border-border bg-background p-1">
                   <input
                     type="color"
@@ -379,7 +379,7 @@ export function BackgroundInspectorDialog({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-muted-foreground">Color Final</label>
+                <label className="text-[10px] font-bold uppercase text-muted-foreground">Color final</label>
                 <div className="flex items-center gap-1.5 rounded-xl border border-border bg-background p-1">
                   <input
                     type="color"
@@ -417,12 +417,12 @@ export function BackgroundInspectorDialog({
             {/* File Upload or URL input */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Subir Imagen (Cloudflare R2) o URL Externa
+                Subir imagen (Cloudflare R2) o URL externa
               </label>
               <div className="flex items-center gap-2">
                 <label className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/60 px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer shrink-0">
                   <Upload className="size-3.5 text-primary" />
-                  <span>{isUploading ? "Subiendo..." : "Seleccionar Archivo"}</span>
+                  <span>{isUploading ? "Subiendo..." : "Seleccionar archivo"}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -446,7 +446,7 @@ export function BackgroundInspectorDialog({
             <div className="grid grid-cols-2 gap-3 items-center">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Ajuste de Imagen
+                  Ajuste de imagen
                 </label>
                 <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl">
                   {(["cover", "contain", "repeat"] as const).map((fit) => (
@@ -466,7 +466,7 @@ export function BackgroundInspectorDialog({
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground">
-                  <span className="uppercase tracking-wider">Opacidad de Imagen</span>
+                  <span className="uppercase tracking-wider">Opacidad de imagen</span>
                   <span className="font-mono text-foreground">{imageOpacity}%</span>
                 </div>
                 <Slider
@@ -486,7 +486,7 @@ export function BackgroundInspectorDialog({
           <div className="flex items-center justify-between">
             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Grid className="size-3 text-primary" />
-              <span>Patrón de Rejilla Técnico</span>
+              <span>Patrón de rejilla técnico</span>
             </label>
             <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl">
               {(["none", "grid", "dots"] as const).map((p) => (
@@ -515,7 +515,7 @@ export function BackgroundInspectorDialog({
             className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <RotateCcw className="size-3.5 mr-1.5" />
-            <span>Por Defecto</span>
+            <span>Por defecto</span>
           </Button>
 
           <div className="flex items-center gap-2">
@@ -535,7 +535,7 @@ export function BackgroundInspectorDialog({
               className="text-xs font-semibold cursor-pointer"
             >
               <Check className="size-3.5 mr-1" />
-              <span>Aplicar Fondo</span>
+              <span>Aplicar fondo</span>
             </Button>
           </div>
         </DialogFooter>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useEffect } from "react"
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import {
   ReactFlow,
   Background,
@@ -29,11 +29,16 @@ import {
   Copy,
   Trash2,
 } from "lucide-react"
-import type { UniversalNode, UniversalStep, AnimationBackground } from "@/types/universal-animation"
+import type { UniversalNode, UniversalStep, AnimationBackground, UniversalAnimationData } from "@/types/universal-animation"
 import { getBackgroundInlineStyle, getPatternSvgPattern } from "@/lib/animations/background-styles"
 import { StudioPlaybackBar } from "./studio-playback-bar"
 import { PacketParticleOverlay } from "./packet-particle-overlay"
 import type { PlaybackMode } from "@/lib/animations/studio-playback-controller"
+import gsap from "gsap"
+import {
+  compileUniversalTimeline,
+  type UniversalPaletteColors,
+} from "@/lib/animations/universal-compiler"
 
 interface ContextMenuState {
   x: number
@@ -104,6 +109,7 @@ export function Canvas({
 }: CanvasProps) {
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -111,6 +117,104 @@ export function Canvas({
 
   const isDark = mounted && resolvedTheme === "dark"
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+
+  const C: UniversalPaletteColors = useMemo(
+    () =>
+      !isDark
+        ? {
+            idle: "#94A3B8",
+            active: "#2563EB",
+            success: "#059669",
+            warn: "#D97706",
+            destructive: "#EF4444",
+            primary: "#0070F3",
+            muted: "#CBD5E1",
+            fg: "#0F172A",
+            bg: "#E5EAF0",
+            warnText: "#111827",
+            successText: "#F8FAFC",
+            subText: "#475569",
+          }
+        : {
+            idle: "#64748B",
+            active: "#38BDF8",
+            success: "#34D399",
+            warn: "#FBBF24",
+            destructive: "#F87171",
+            primary: "#0070F3",
+            muted: "#334155",
+            fg: "#E5E7EB",
+            bg: "#1F2937",
+            warnText: "#111827",
+            successText: "#F8FAFC",
+            subText: "#A3B0C2",
+          },
+    [isDark]
+  )
+
+  // Live GSAP timeline synchronization in Studio
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container || !currentStep) return
+
+    const q = gsap.utils.selector(container)
+    const animData: UniversalAnimationData = {
+      title: "Studio active animation",
+      description: "Active Studio canvas sequence",
+      discipline: "general",
+      topic: "studio",
+      tags: [],
+      difficulty: "beginner",
+      is_public: true,
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        type: n.type as any,
+        label: (n.data as any).label || "",
+        x: n.position.x,
+        y: n.position.y,
+        width: (n.data as any).width,
+        height: (n.data as any).height,
+        fill: (n.data as any).fill,
+        stroke: (n.data as any).stroke,
+        strokeWidth: (n.data as any).strokeWidth,
+        opacity: (n.data as any).opacity,
+        rotation: (n.data as any).rotation,
+        scale: (n.data as any).scale,
+        shapeDetails: (n.data as any).shapeDetails,
+        content: (n.data as any).content,
+      })),
+      connectors: edges.map((e) => ({
+        id: e.id,
+        sourceId: e.source,
+        targetId: e.target,
+        type: (e.data as any)?.connectorType || "bezier",
+        directed: (e.data as any)?.directed || "none",
+        dashed: e.animated,
+        color: (e.style as any)?.stroke,
+      })),
+      steps: [currentStep],
+    }
+
+    const tl = compileUniversalTimeline(animData, q, C)
+
+    if (playbackProps) {
+      if (playbackProps.mode === "playing_step" || playbackProps.mode === "playing_all") {
+        tl.timeScale(playbackProps.speed)
+        tl.progress(playbackProps.progress)
+        tl.play()
+      } else if (playbackProps.mode === "paused") {
+        tl.pause()
+        tl.progress(playbackProps.progress)
+      } else {
+        tl.progress(playbackProps.progress || 0)
+        tl.pause()
+      }
+    }
+
+    return () => {
+      tl.kill()
+    }
+  }, [nodes, edges, currentStep, playbackProps?.mode, playbackProps?.progress, playbackProps?.speed, C])
 
   const bgStyle = getBackgroundInlineStyle(background, isDark ? "dark" : "light")
   const patternBg = getPatternSvgPattern(background?.pattern, isDark)
@@ -178,6 +282,7 @@ export function Canvas({
 
   return (
     <div
+      ref={containerRef}
       className="relative flex-1 h-full w-full overflow-hidden transition-colors duration-300"
       style={bgStyle}
     >

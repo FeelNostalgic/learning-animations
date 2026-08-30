@@ -19,7 +19,7 @@ export default function LoginPage() {
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Iniciar Sesión</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Iniciar sesión</h1>
           <p className="text-sm text-muted-foreground">
             Accede para crear y publicar tus propias animaciones
           </p>
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" htmlFor="identifier">
-              Usuario o Correo Electrónico
+              Usuario o correo electrónico
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

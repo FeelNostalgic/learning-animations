@@ -260,7 +260,7 @@ export function StepInspector({
                   className="h-6 gap-1 px-2 text-[11px] cursor-pointer"
                 >
                   <Plus className="size-3 text-primary" />
-                  <span>Añadir Acción</span>
+                  <span>Añadir acción</span>
                 </Button>
               )}
             </div>
@@ -306,30 +306,30 @@ export function StepInspector({
           {(isAddingAction || editingActionId) && (
             <div className="rounded-xl border border-primary/40 bg-card p-3 space-y-2.5 text-xs shadow-md mt-3">
               <h4 className="font-bold text-primary text-[11px] uppercase tracking-wider">
-                {editingActionId ? "Editar Acción" : "Nueva Acción"}
+                {editingActionId ? "Editar acción" : "Nueva acción"}
               </h4>
 
               <div>
-                <label className="text-[10px] font-medium text-muted-foreground">Tipo de Acción</label>
+                <label className="text-[10px] font-medium text-muted-foreground">Tipo de acción</label>
                 <select
                   value={actionType}
                   onChange={(e) => setActionType(e.target.value as UniversalActionType)}
                   className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none"
                 >
-                  <option value="highlight">Resaltar Contorno (Highlight)</option>
-                  <option value="pulse">Pulso Radiante (Pulse)</option>
-                  <option value="packet">Envío de Partícula / Paquete (Packet)</option>
-                  <option value="badge">Insignia (Badge)</option>
-                  <option value="tooltip">Bocadillo de Información (Tooltip)</option>
-                  <option value="fade">Desvanecer (Fade)</option>
-                  <option value="math_eval">Animar Fórmula (Math Eval)</option>
+                  <option value="highlight">Resaltar contorno (highlight)</option>
+                  <option value="pulse">Pulso radiante (pulse)</option>
+                  <option value="packet">Envío de partícula / paquete (packet)</option>
+                  <option value="badge">Insignia (badge)</option>
+                  <option value="tooltip">Bocadillo de información (tooltip)</option>
+                  <option value="fade">Desvanecer (fade)</option>
+                  <option value="math_eval">Animar fórmula (math eval)</option>
                 </select>
               </div>
 
               {actionType === "packet" ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] font-medium text-muted-foreground">Origen (From)</label>
+                    <label className="text-[10px] font-medium text-muted-foreground">Origen (from)</label>
                     <select
                       value={actionFrom}
                       onChange={(e) => setActionFrom(e.target.value)}
@@ -343,7 +343,7 @@ export function StepInspector({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium text-muted-foreground">Destino (To)</label>
+                    <label className="text-[10px] font-medium text-muted-foreground">Destino (to)</label>
                     <select
                       value={actionTo}
                       onChange={(e) => setActionTo(e.target.value)}
@@ -359,7 +359,7 @@ export function StepInspector({
                 </div>
               ) : (
                 <div>
-                  <label className="text-[10px] font-medium text-muted-foreground">Nodo Objetivo</label>
+                  <label className="text-[10px] font-medium text-muted-foreground">Nodo objetivo</label>
                   <select
                     value={actionTarget}
                     onChange={(e) => setActionTarget(e.target.value)}
@@ -413,15 +413,15 @@ export function StepInspector({
       {activeTab === "interaction" && (
         <div className="flex-1 overflow-y-auto p-3.5 space-y-3 text-xs">
           <div>
-            <label className="text-[10px] font-medium text-muted-foreground">Modo de Interactividad</label>
+            <label className="text-[10px] font-medium text-muted-foreground">Modo de interactividad</label>
             <select
               value={interactionType}
               onChange={(e) => handleSaveInteraction(e.target.value as any)}
               className="mt-1 w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-semibold text-primary focus:outline-none"
             >
-              <option value="none">Sin interactividad (Reproducción directa)</option>
-              <option value="variable_slider">Control de Variable en Vivo (Slider)</option>
-              <option value="quiz">Reto Conceptual (Quiz Interactivo)</option>
+              <option value="none">Sin interactividad (reproducción directa)</option>
+              <option value="variable_slider">Control de variable en vivo (slider)</option>
+              <option value="quiz">Reto conceptual (quiz interactivo)</option>
             </select>
           </div>
 
@@ -429,7 +429,7 @@ export function StepInspector({
           {interactionType === "variable_slider" && (
             <div className="rounded-xl border border-primary/30 bg-card p-3 space-y-2.5">
               <div>
-                <label className="text-[10px] font-medium text-muted-foreground">Nombre de la Variable</label>
+                <label className="text-[10px] font-medium text-muted-foreground">Nombre de la variable</label>
                 <input
                   type="text"
                   value={varName}
@@ -502,7 +502,7 @@ export function StepInspector({
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-medium text-muted-foreground">Opciones de Respuesta</label>
+                <label className="text-[10px] font-medium text-muted-foreground">Opciones de respuesta</label>
                 {quizOptions.map((opt, idx) => (
                   <div key={opt.id} className="rounded-lg border border-border bg-background p-2 space-y-1.5">
                     <div className="flex items-center justify-between">

@@ -2,7 +2,7 @@ import { AppLayoutShell } from "@/components/app-layout-shell"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Mis Animaciones",
+  title: "Mis animaciones",
 }
 
 export default function MyAnimationsLayout({

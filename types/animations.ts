@@ -1,3 +1,5 @@
+import type { DisciplineType, DifficultyLevel } from "./universal-animation"
+
 export interface AnimationStep {
   id: string
   label: string
@@ -9,5 +11,8 @@ export interface AnimationMeta {
   title: string
   description: string
   topic: string
+  discipline?: DisciplineType
+  difficulty?: DifficultyLevel
+  tags?: string[]
   steps: AnimationStep[]
 }

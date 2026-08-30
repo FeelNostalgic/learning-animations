@@ -7,6 +7,7 @@ import type {
   UniversalStep,
   DisciplineType,
   DifficultyLevel,
+  AnimationBackground,
 } from "@/types/universal-animation"
 
 export interface ReactFlowConversionMeta {
