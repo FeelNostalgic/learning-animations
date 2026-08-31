@@ -1,13 +1,13 @@
 "use client"
 
-import { useActionState } from "react"
+import { Suspense, useActionState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { login } from "@/app/auth/actions"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Lock, User, AlertCircle, Sparkles } from "lucide-react"
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const redirect = searchParams.get("redirect") || "/animations"
   const [state, formAction, isPending] = useActionState(login, null)
@@ -88,5 +88,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

@@ -111,28 +111,33 @@ export async function getAnimationById(
       return { success: false, error: error?.message || "Animación no encontrada" }
     }
 
+    const raw: UniversalAnimationData = {
+      id: data.id,
+      title: data.title,
+      description: data.description || "",
+      discipline: data.discipline || "general",
+      topic: data.topic,
+      tags: data.tags || [],
+      difficulty: data.difficulty || "beginner",
+      is_public: data.is_public ?? false,
+      background: (data.background as any) ?? undefined,
+      nodes: (data.nodes || []) as any,
+      connectors: (data.connectors || data.links || []) as any,
+      steps: (data.steps || []) as any,
+      user_id: data.user_id,
+      views_count: data.views_count || 0,
+      likes_count: data.likes_count || 0,
+      forked_from: data.forked_from ?? undefined,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    }
+    // Sanitize nulls from legacy DB rows (props: null, background: null, interaction: null, etc.)
+    const parsed = universalAnimationSchema.safeParse(raw)
+    const sanitized = parsed.success ? (parsed.data as UniversalAnimationData) : raw
+
     return {
       success: true,
-      data: {
-        id: data.id,
-        title: data.title,
-        description: data.description || "",
-        discipline: data.discipline || "general",
-        topic: data.topic,
-        tags: data.tags || [],
-        difficulty: data.difficulty || "beginner",
-        is_public: data.is_public ?? false,
-        background: data.background,
-        nodes: (data.nodes || []) as any,
-        connectors: (data.connectors || data.links || []) as any,
-        steps: (data.steps || []) as any,
-        user_id: data.user_id,
-        views_count: data.views_count || 0,
-        likes_count: data.likes_count || 0,
-        forked_from: data.forked_from,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-      },
+      data: sanitized,
     }
   } catch (err: any) {
     return { success: false, error: err.message || "Error al obtener la animación" }
@@ -180,14 +185,14 @@ export async function getUserAnimations(): Promise<{
         tags: item.tags || [],
         difficulty: item.difficulty || "beginner",
         is_public: item.is_public ?? false,
-        background: item.background,
+        background: (item.background as any) ?? undefined,
         nodes: (item.nodes || []) as any,
         connectors: (item.connectors || item.links || []) as any,
         steps: (item.steps || []) as any,
         user_id: item.user_id,
         views_count: item.views_count || 0,
         likes_count: item.likes_count || 0,
-        forked_from: item.forked_from,
+        forked_from: item.forked_from ?? undefined,
         created_at: item.created_at,
         updated_at: item.updated_at,
       })),
@@ -353,14 +358,14 @@ export async function getPublicAnimations(): Promise<{
         tags: item.tags || [],
         difficulty: item.difficulty || "beginner",
         is_public: true,
-        background: item.background,
+        background: (item.background as any) ?? undefined,
         nodes: (item.nodes || []) as any,
         connectors: (item.connectors || item.links || []) as any,
         steps: (item.steps || []) as any,
         user_id: item.user_id,
         views_count: item.views_count || 0,
         likes_count: item.likes_count || 0,
-        forked_from: item.forked_from,
+        forked_from: item.forked_from ?? undefined,
         created_at: item.created_at,
         updated_at: item.updated_at,
       })),

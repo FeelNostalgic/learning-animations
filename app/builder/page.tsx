@@ -818,6 +818,7 @@ function BuilderContent() {
             nodes={liveNodes}
             edges={liveEdges}
             currentStep={steps[selectedStepIndex]}
+            allSteps={steps}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}

@@ -41,10 +41,15 @@ export class InteractionRuntime {
    * Registers an interaction definition associated with a step.
    */
   public registerInteraction(stepId: string, interaction: UniversalInteraction): void {
-    this.interactions.set(stepId, interaction)
-
     if (interaction.type === "variable_slider" && interaction.variableName) {
       const varName = interaction.variableName
+      // duplicate variableName guard across steps
+      for (const [sid, inter] of this.interactions.entries()) {
+        if (sid !== stepId && (inter as unknown as Record<string, unknown>).variableName === varName) {
+          throw new Error(`Duplicate variableName: ${varName}`)
+        }
+      }
+      this.interactions.set(stepId, interaction)
       this.constraints.set(varName, {
         min: interaction.min,
         max: interaction.max,
@@ -56,8 +61,20 @@ export class InteractionRuntime {
       const initialValue = interaction.defaultValue ?? interaction.min ?? 0
       this.variables.set(varName, initialValue)
       this.unlockedSteps.set(stepId, true)
-    } else if (interaction.type === "quiz" || interaction.type === "drag_drop") {
-      // Quizzes and drag-drop are locked until solved
+      return
+    }
+
+    this.interactions.set(stepId, interaction)
+
+    if (interaction.type === "quiz") {
+      const blocksNextStep = (interaction as unknown as Record<string, unknown>).blocksNextStep
+      // blocksNextStep === false means non-blocking → always unlocked
+      if (blocksNextStep === false) {
+        this.unlockedSteps.set(stepId, true)
+      } else {
+        this.unlockedSteps.set(stepId, false)
+      }
+    } else if (interaction.type === "drag_drop") {
       this.unlockedSteps.set(stepId, false)
     } else {
       this.unlockedSteps.set(stepId, true)
@@ -150,7 +167,11 @@ export class InteractionRuntime {
       }
     }
 
-    if (selectedOption.isCorrect) {
+    const blocksNextStep = (interaction as unknown as Record<string, unknown>).blocksNextStep
+    // non-blocking quiz never gates progression
+    if (blocksNextStep === false) {
+      this.unlockedSteps.set(stepId, true)
+    } else if (selectedOption.isCorrect) {
       this.unlockedSteps.set(stepId, true)
     }
 
@@ -163,17 +184,54 @@ export class InteractionRuntime {
   }
 
   /**
-   * Selects a branch choice and returns the target step ID.
+   * Returns the automatic branch target for a given step (single jump).
+   * Supports legacy choices array for backwards compat.
+   */
+  public getBranchTarget(stepId: string): string | null {
+    const interaction = this.interactions.get(stepId)
+    if (!interaction || interaction.type !== "branch_choice") {
+      return null
+    }
+    const raw = interaction as unknown as Record<string, unknown>
+    // New shape: targetStepId string
+    const direct = raw.targetStepId as string | undefined
+    if (typeof direct === "string" && direct.trim() !== "") {
+      this.unlockedSteps.set(stepId, true)
+      return direct
+    }
+    // Legacy: choices array
+    const choices = raw.choices as BranchChoice[] | undefined
+    if (choices && choices.length > 0) {
+      const firstValid = choices.find((c) => c.targetStepId && c.targetStepId.trim() !== "")
+      if (firstValid) {
+        this.unlockedSteps.set(stepId, true)
+        return firstValid.targetStepId
+      }
+    }
+    return null
+  }
+
+  /**
+   * @deprecated Use getBranchTarget — kept for backwards compat with tests
    */
   public selectBranchChoice(stepId: string, choiceId: string): string | null {
     const interaction = this.interactions.get(stepId)
-    if (!interaction || interaction.type !== "branch_choice" || !interaction.choices) {
+    if (!interaction || interaction.type !== "branch_choice") {
       return null
     }
-
-    const choice = interaction.choices.find((c) => c.id === choiceId)
+    const raw = interaction as unknown as Record<string, unknown>
+    // New single-target mode: ignore choiceId, return direct target
+    const direct = raw.targetStepId as string | undefined
+    if (typeof direct === "string" && direct.trim() !== "") {
+      this.unlockedSteps.set(stepId, true)
+      return direct
+    }
+    // Legacy choices
+    const choices = raw.choices as BranchChoice[] | undefined
+    if (!choices) return null
+    const choice = choices.find((c) => c.id === choiceId)
     if (!choice) return null
-
+    if (!choice.targetStepId || choice.targetStepId.trim() === "") return null
     this.unlockedSteps.set(stepId, true)
     return choice.targetStepId
   }
@@ -216,4 +274,16 @@ export class InteractionRuntime {
     this.interactions.clear()
     this.unlockedSteps.clear()
   }
+}
+
+// Singleton for builder live preview (ephemeral, reset on reload)
+let _singleton: InteractionRuntime | null = null
+export function getInteractionRuntime(): InteractionRuntime {
+  if (!_singleton) _singleton = new InteractionRuntime()
+  return _singleton
+}
+export const interactionRuntime = {
+  get instance() {
+    return getInteractionRuntime()
+  },
 }

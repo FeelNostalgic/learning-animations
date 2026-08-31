@@ -51,6 +51,7 @@ interface CanvasProps {
   nodes: Node[]
   edges: Edge[]
   currentStep?: UniversalStep
+  allSteps?: UniversalStep[]
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
   onConnect: OnConnect
@@ -90,6 +91,7 @@ export function Canvas({
   nodes,
   edges,
   currentStep,
+  allSteps,
   onNodesChange,
   onEdgesChange,
   onConnect,
@@ -324,6 +326,7 @@ export function Canvas({
           selectedEdge={selectedEdge}
           onUpdateEdge={onUpdateEdge || (() => {})}
           onDeleteEdge={onDeleteEdge || (() => {})}
+          allSteps={allSteps}
           onClose={() => {
             onSelectNode(null)
             onSelectEdge(null)

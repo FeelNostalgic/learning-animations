@@ -17,6 +17,31 @@ export type UniversalNodeType =
   | "network" // Backwards compatible network device (pc, switch, router, etc.)
   | "icon" // Lucide / visual symbol icon
   | "container" // Boundary / subsystem container box
+  | "interactive_slider"
+  | "interactive_quiz"
+  | "interactive_branch"
+
+export interface SliderProps {
+  variableName: string
+  min: number
+  max: number
+  step: number
+  defaultValue: number
+  unit?: string
+}
+
+export interface QuizProps {
+  quizType: "single" | "multi"
+  question: string
+  options: QuizOption[]
+  blocksNextStep: boolean
+}
+
+export interface BranchProps {
+  targetStepId: string
+}
+
+export type InteractiveProps = SliderProps | QuizProps | BranchProps
 
 export type ShapeKind =
   | "circle"
@@ -156,7 +181,8 @@ export interface UniversalInteraction {
   // For quiz
   question?: string
   options?: QuizOption[]
-  // For branch_choice
+  // For branch_choice — single automatic jump (legacy choices still supported)
+  targetStepId?: string
   choices?: BranchChoice[]
   // For drag_drop
   dragTargetNodeId?: string
