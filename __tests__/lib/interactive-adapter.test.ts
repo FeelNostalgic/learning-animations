@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from "vitest"
 import { universalToReactFlow, reactFlowToUniversal } from "@/lib/animations/react-flow-adapter"
 import type { UniversalAnimationData } from "@/types/universal-animation"
@@ -6,7 +5,12 @@ import type { UniversalAnimationData } from "@/types/universal-animation"
 describe("Interactive Adapter round-trip — Phase 4.3 RED", () => {
   const interactiveAnim: UniversalAnimationData = {
     title: "Test interactive",
+    description: "Test interactive animation",
+    discipline: "math",
     topic: "Math",
+    tags: [],
+    difficulty: "beginner",
+    is_public: false,
     nodes: [
       { id: "n-slider", type: "interactive_slider", label: "Slider", x: 10, y: 20, props: { variableName: "x", min: 0, max: 10, step: 1, defaultValue: 5 } },
       { id: "n-quiz", type: "interactive_quiz", label: "Quiz", x: 100, y: 20, props: { quizType: "single", question: "Q?", options: [{ id: "a", text: "A", isCorrect: true, feedback: "ok" }, { id: "b", text: "B", isCorrect: false, feedback: "no" }], blocksNextStep: true } },
@@ -39,10 +43,15 @@ describe("Interactive Adapter round-trip — Phase 4.3 RED", () => {
   it("tolerates missing props for backwards compat", () => {
     const oldAnim: UniversalAnimationData = {
       title: "Old",
+      description: "Old animation",
+      discipline: "general",
       topic: "General",
+      tags: [],
+      difficulty: "beginner",
+      is_public: false,
       nodes: [{ id: "n1", type: "shape", label: "A", x: 0, y: 0 }],
       connectors: [],
-      steps: [{ id: "s1", label: "S1", description: "" }],
+      steps: [{ id: "s1", label: "S1", description: "", actions: [] }],
     }
     const { nodes, edges } = universalToReactFlow(oldAnim)
     expect(nodes[0].data.props).toBeUndefined()
@@ -54,10 +63,15 @@ describe("Interactive Adapter round-trip — Phase 4.3 RED", () => {
   it("interactive node without props survives round-trip (optional)", () => {
     const anim: UniversalAnimationData = {
       title: "No props",
+      description: "No props animation",
+      discipline: "general",
       topic: "General",
+      tags: [],
+      difficulty: "beginner",
+      is_public: false,
       nodes: [{ id: "n1", type: "interactive_slider", label: "Slider", x: 0, y: 0 }],
       connectors: [],
-      steps: [{ id: "s1", label: "S1", description: "" }],
+      steps: [{ id: "s1", label: "S1", description: "", actions: [] }],
     }
     const { nodes, edges } = universalToReactFlow(anim)
     const recovered = reactFlowToUniversal(nodes, edges, anim.steps, { title: "No props", topic: "General" })
