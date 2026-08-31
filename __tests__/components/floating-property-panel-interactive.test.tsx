@@ -66,33 +66,42 @@ describe("FloatingPropertyPanel interactive inspectors — Phase 4.2 RED", () =>
     expect(screen.getByText(/bloquea avance/i)).toBeInTheDocument()
   })
 
-  it("renders branch inspector with choices and add/remove", () => {
+  it("renders branch inspector with single target dropdown", () => {
     const onUpdateNode = vi.fn()
     const node = makeNode({
       type: "interactive_branch",
       label: "Branch",
-      props: { choices: [{ id: "c1", label: "Go", targetStepId: "step-2" }] },
+      props: { targetStepId: "step-2" },
     })
-    render(<FloatingPropertyPanel selectedNode={node} onUpdateNode={onUpdateNode} onDeleteNode={vi.fn()} selectedEdge={null} onUpdateEdge={vi.fn()} onDeleteEdge={vi.fn()} onClose={vi.fn()} />)
-    expect(screen.getByDisplayValue("Go")).toBeInTheDocument()
-    expect(screen.getByDisplayValue("step-2")).toBeInTheDocument()
-    // add button
-    const addBtn = screen.getByText(/añadir opción|añadir/i)
-    expect(addBtn).toBeInTheDocument()
-    fireEvent.click(addBtn)
-    expect(onUpdateNode).toHaveBeenCalled()
+    const allSteps = [
+      { id: "step-1", label: "1. Intro", description: "", actions: [] },
+      { id: "step-2", label: "2. Desarrollo", description: "", actions: [] },
+    ] as any
+    const { container } = render(<FloatingPropertyPanel selectedNode={node} onUpdateNode={onUpdateNode} onDeleteNode={vi.fn()} selectedEdge={null} onUpdateEdge={vi.fn()} onDeleteEdge={vi.fn()} onClose={vi.fn()} allSteps={allSteps} />)
+    expect(screen.getByText("Seleccionar paso destino")).toBeInTheDocument()
+    const select = container.querySelector("select") as HTMLSelectElement
+    expect(select).not.toBeNull()
+    expect(select.value).toBe("step-2")
+    expect(screen.queryByText(/añadir opción/i)).not.toBeInTheDocument()
   })
 
-  it("persists branch choice update via onUpdateNode", () => {
+  it("persists branch target update via onUpdateNode", () => {
     const onUpdateNode = vi.fn()
     const node = makeNode({
       type: "interactive_branch",
-      props: { choices: [{ id: "c1", label: "Go", targetStepId: "step-2" }] },
+      props: { targetStepId: "step-2" },
     })
-    render(<FloatingPropertyPanel selectedNode={node} onUpdateNode={onUpdateNode} onDeleteNode={vi.fn()} selectedEdge={null} onUpdateEdge={vi.fn()} onDeleteEdge={vi.fn()} onClose={vi.fn()} />)
-    const labelInput = screen.getByDisplayValue("Go")
-    fireEvent.change(labelInput, { target: { value: "Updated" } })
+    const allSteps = [
+      { id: "step-1", label: "1. Intro", description: "", actions: [] },
+      { id: "step-2", label: "2. Desarrollo", description: "", actions: [] },
+      { id: "step-3", label: "3. Cierre", description: "", actions: [] },
+    ] as any
+    const { container } = render(<FloatingPropertyPanel selectedNode={node} onUpdateNode={onUpdateNode} onDeleteNode={vi.fn()} selectedEdge={null} onUpdateEdge={vi.fn()} onDeleteEdge={vi.fn()} onClose={vi.fn()} allSteps={allSteps} />)
+    const select = container.querySelector("select") as HTMLSelectElement
+    fireEvent.change(select, { target: { value: "step-3" } })
     expect(onUpdateNode).toHaveBeenCalled()
+    const updated = onUpdateNode.mock.calls[0][0] as UniversalNode
+    expect((updated.props as any).targetStepId).toBe("step-3")
   })
 })
 

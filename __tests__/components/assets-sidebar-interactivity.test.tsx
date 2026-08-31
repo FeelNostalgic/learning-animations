@@ -3,53 +3,59 @@ import { describe, it, expect, vi } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import { AssetsSidebar } from "@/components/builder/assets-sidebar"
 
-describe("AssetsSidebar interactivity tab — Phase 4.1 RED", () => {
-  it("renders interactividad tab", () => {
+describe("AssetsSidebar — interactivity tab restored, step-level interactivity removed", () => {
+  it("renders interactividad as category option in select", () => {
     const onAddNode = vi.fn()
     render(<AssetsSidebar onAddNode={onAddNode} />)
-    expect(screen.getByText(/interactividad/i)).toBeInTheDocument()
+    const select = screen.getByLabelText(/categoría/i) as HTMLSelectElement
+    expect(select).toBeInTheDocument()
+    const options = Array.from(select.options).map((o) => o.textContent)
+    expect(options).toContain("Interactividad")
+    expect(options).toContain("Formas")
+    expect(options).toContain("KaTeX")
   })
 
-  it("shows 3 presets when interactivity tab active", async () => {
+  it("has no horizontal scrollbar — uses select dropdown instead", () => {
     const onAddNode = vi.fn()
-    render(<AssetsSidebar onAddNode={onAddNode} />)
-    const tab = screen.getByText(/interactividad/i)
-    fireEvent.click(tab)
-    expect(screen.getByText(/^Slider$/)).toBeInTheDocument()
-    expect(screen.getByText(/^Quiz$/)).toBeInTheDocument()
-    expect(screen.getByText(/^Branch$/)).toBeInTheDocument()
+    const { container } = render(<AssetsSidebar onAddNode={onAddNode} />)
+    expect(container.innerHTML).not.toMatch(/overflow-x-auto/)
+    expect(container.innerHTML).not.toMatch(/scrollbar-thin/)
+    expect(container.innerHTML).not.toMatch(/whitespace-nowrap.*snap/)
   })
 
-  it("calls onAddNode with interactive_slider preset when clicking slider", () => {
+  it("shows 3 interactivity presets when interactividad category selected", () => {
     const onAddNode = vi.fn()
     render(<AssetsSidebar onAddNode={onAddNode} />)
-    fireEvent.click(screen.getByText(/interactividad/i))
-    const sliderBtn = screen.getByText(/slider/i).closest("button")
-    expect(sliderBtn).not.toBeNull()
-    fireEvent.click(sliderBtn!)
+    const select = screen.getByLabelText(/categoría/i) as HTMLSelectElement
+    fireEvent.change(select, { target: { value: "interactivity" } })
+    expect(screen.getByText("Slider")).toBeInTheDocument()
+    expect(screen.getByText("Quiz")).toBeInTheDocument()
+    expect(screen.getByText("Branch")).toBeInTheDocument()
+  })
+
+  it("calls onAddNode with correct types for each preset", () => {
+    const onAddNode = vi.fn()
+    render(<AssetsSidebar onAddNode={onAddNode} />)
+    const select = screen.getByLabelText(/categoría/i) as HTMLSelectElement
+    fireEvent.change(select, { target: { value: "interactivity" } })
+    fireEvent.click(screen.getByText("Slider").closest("button")!)
     expect(onAddNode).toHaveBeenCalledWith("interactive_slider", expect.any(Object))
-  })
-
-  it("calls onAddNode with interactive_quiz and interactive_branch", () => {
-    const onAddNode = vi.fn()
-    render(<AssetsSidebar onAddNode={onAddNode} />)
-    fireEvent.click(screen.getByText(/interactividad/i))
-    const quizHeading = screen.getAllByText(/^Quiz$/).find((el) => el.closest("button"))
-    const quizBtn = quizHeading?.closest("button") || screen.getByText(/^Quiz$/).closest("button")
-    fireEvent.click(quizBtn!)
+    fireEvent.click(screen.getByText("Quiz").closest("button")!)
     expect(onAddNode).toHaveBeenCalledWith("interactive_quiz", expect.any(Object))
-    const branchHeading = screen.getAllByText(/^Branch$/)[0]
-    const branchBtn = branchHeading.closest("button")
-    fireEvent.click(branchBtn!)
+    fireEvent.click(screen.getByText("Branch").closest("button")!)
     expect(onAddNode).toHaveBeenCalledWith("interactive_branch", expect.any(Object))
   })
 
-  it("grid is 6 cols or at least renders preset buttons in grid", () => {
+  it("still renders geometry presets via default category", () => {
     const onAddNode = vi.fn()
-    const { container } = render(<AssetsSidebar onAddNode={onAddNode} />)
-    fireEvent.click(screen.getByText(/interactividad/i))
-    // check grid class
-    expect(container.innerHTML).toMatch(/grid/)
+    render(<AssetsSidebar onAddNode={onAddNode} />)
+    expect(screen.getByText("Círculo")).toBeInTheDocument()
+  })
+
+  it("interactive node types are still registerable via nodeTypes", async () => {
+    const { nodeTypes } = await import("@/components/builder/nodes")
+    expect(nodeTypes["interactive_slider"]).toBeDefined()
+    expect(nodeTypes["interactive_quiz"]).toBeDefined()
+    expect(nodeTypes["interactive_branch"]).toBeDefined()
   })
 })
-

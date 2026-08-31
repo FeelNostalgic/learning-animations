@@ -226,13 +226,41 @@ export function InteractionOverlay({
     )
   }
 
-  // ── 3. Branch Choices / Decision Tree ──────────────────────────────────
-  if (interaction.type === "branch_choice" && interaction.choices) {
-    const handleChoice = (choiceId: string) => {
-      const targetStep = runtime.selectBranchChoice(stepId, choiceId)
-      if (targetStep && onJumpToStep) {
-        onJumpToStep(targetStep)
+  // ── 3. Branch — automatic single jump (no user choice) ─────────────
+  if (interaction.type === "branch_choice") {
+    const raw = interaction as unknown as Record<string, unknown>
+    const targetStepId = (raw.targetStepId as string) || (interaction.choices?.[0]?.targetStepId as string) || ""
+    const hasInvalid = !targetStepId || targetStepId.trim() === ""
+
+    useEffect(() => {
+      if (hasInvalid) return
+      const target = runtime.getBranchTarget(stepId)
+      if (target && onJumpToStep) {
+        // microtask auto-jump — no user click required
+        const t = setTimeout(() => onJumpToStep(target), 0)
+        return () => clearTimeout(t)
       }
+    }, [stepId, hasInvalid, onJumpToStep, runtime])
+
+    if (hasInvalid) {
+      return (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className={cn(
+            "rounded-xl border border-destructive/40 bg-destructive/10 p-4 shadow-xl backdrop-blur-md max-w-md",
+            className
+          )}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-destructive/10 text-destructive">
+              <GitFork className="size-3.5" />
+            </div>
+            <span className="text-xs font-bold text-destructive uppercase tracking-wide">Bifurcación</span>
+          </div>
+          <p className="text-xs text-destructive">Destino inválido: revisa targetStepId</p>
+        </div>
+      )
     }
 
     return (
@@ -242,35 +270,18 @@ export function InteractionOverlay({
           className
         )}
         role="region"
-        aria-label="Toma de decisiones de la animación"
+        aria-label="Salto automático de la animación"
       >
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
             <GitFork className="size-3.5" />
           </div>
-          <span className="text-xs font-bold text-foreground uppercase tracking-wide">
-            Bifurcación de Escenario
-          </span>
+          <span className="text-xs font-bold text-foreground uppercase tracking-wide">Bifurcación</span>
         </div>
-
-        <p className="text-xs text-muted-foreground mb-3">
-          Elige qué camino deseas explorar a continuación:
+        <p className="text-xs text-foreground">
+          Salta a: <span className="font-mono font-semibold text-primary">{targetStepId}</span>
         </p>
-
-        <div className="space-y-2">
-          {interaction.choices.map((choice) => (
-            <Button
-              key={choice.id}
-              variant="outline"
-              size="sm"
-              onClick={() => handleChoice(choice.id)}
-              className="w-full justify-between text-xs h-auto py-2.5 px-3 border-border hover:border-primary hover:bg-primary/5 cursor-pointer text-left"
-            >
-              <span>{choice.label}</span>
-              <ArrowRight className="size-3.5 text-primary shrink-0 ml-2" />
-            </Button>
-          ))}
-        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">Salto automático al continuar</p>
       </div>
     )
   }

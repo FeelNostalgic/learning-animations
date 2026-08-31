@@ -4,6 +4,7 @@ import React, { memo, useState, useCallback } from "react"
 import { type NodeProps } from "@xyflow/react"
 import { InteractiveNodeShell } from "./InteractiveNodeShell"
 import { Slider } from "@/components/ui/slider"
+import { getInteractionRuntime } from "@/lib/animations/interaction-runtime"
 import type { SliderProps } from "@/types/universal-animation"
 
 export const InteractiveSliderNode = memo(({ id, data, selected }: NodeProps) => {
@@ -29,11 +30,13 @@ export const InteractiveSliderNode = memo(({ id, data, selected }: NodeProps) =>
     (vals: number[]) => {
       const v = vals[0] ?? defaultValue
       setValue(v)
-      // ephemeral runtime bridge — if window has runtime, setVariable is handled in player; in builder just local
-      // For builder live preview, try to use InteractionRuntime singleton if available via dynamic import would be heavy
-      // Keep local state as source of truth for test aria-valuenow
+      try {
+        getInteractionRuntime().setVariable(variableName, v)
+      } catch {
+        // runtime not available in test without DOM — ignore
+      }
     },
-    [defaultValue]
+    [defaultValue, variableName]
   )
 
   return (
@@ -43,7 +46,11 @@ export const InteractiveSliderNode = memo(({ id, data, selected }: NodeProps) =>
           <span className="font-mono font-semibold text-foreground">variable: {variableName}</span>
           {unit && <span className="text-muted-foreground">{unit}</span>}
         </div>
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 nodrag nopan"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
           <span className="text-xs font-mono text-muted-foreground">{min}</span>
           <Slider
             value={[value]}
@@ -53,6 +60,7 @@ export const InteractiveSliderNode = memo(({ id, data, selected }: NodeProps) =>
             onValueChange={handleChange}
             aria-label={`Slider ${variableName}`}
             aria-valuetext={`${value}${unit ? ` ${unit}` : ""}`}
+            className="nodrag nopan"
           />
           <span className="text-xs font-mono text-muted-foreground">{max}</span>
         </div>

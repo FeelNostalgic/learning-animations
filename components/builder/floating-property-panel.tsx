@@ -31,6 +31,7 @@ interface FloatingPropertyPanelProps {
   onUpdateEdge: (edge: Edge) => void
   onDeleteEdge: (edgeId: string) => void
   onClose: () => void
+  allSteps?: import("@/types/universal-animation").UniversalStep[]
 }
 
 export function FloatingPropertyPanel({
@@ -41,6 +42,7 @@ export function FloatingPropertyPanel({
   onUpdateEdge,
   onDeleteEdge,
   onClose,
+  allSteps,
 }: FloatingPropertyPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false)
 
@@ -685,63 +687,58 @@ export function FloatingPropertyPanel({
                 </div>
               )}
 
-              {/* Interactive branch inspector */}
+              {/* Interactive branch inspector — single automatic jump */}
               {selectedNode.type === "interactive_branch" && (
                 <div className="space-y-2 border-t border-border pt-2">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Branch interactivo</label>
-                  <div className="space-y-1">
-                    {(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || []).map((choice: unknown, idx: number) => {
-                      const c = choice as Record<string, unknown>
-                      return (
-                        <div key={(c.id as string) || idx} className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
-                          <input
-                            type="text"
-                            value={(c.label as string) || ""}
+                  <p className="text-[10px] text-muted-foreground">Salto automático a un paso existente</p>
+                  {(() => {
+                    const raw = (selectedNode.props as Record<string, unknown>) || {}
+                    const legacyChoices = raw.choices as { targetStepId?: string }[] | undefined
+                    const currentTarget = (raw.targetStepId as string) || legacyChoices?.[0]?.targetStepId || ""
+                    return (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-medium text-muted-foreground">Seleccionar paso destino</label>
+                        {allSteps && allSteps.length > 0 ? (
+                          <select
+                            value={currentTarget}
                             onChange={(e) => {
-                              const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])] as Record<string, unknown>[]
-                              choices[idx] = { ...c, label: e.target.value }
-                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
+                              const next = e.target.value
+                              const nextProps = { ...(selectedNode.props as object) } as Record<string, unknown>
+                              // clean legacy choices
+                              if ("choices" in nextProps) delete nextProps.choices
+                              nextProps.targetStepId = next
+                              onUpdateNode({ ...selectedNode, props: nextProps as any })
                             }}
-                            placeholder="Etiqueta"
-                            className="rounded border border-border px-1 py-0.5 text-xs focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            value={(c.targetStepId as string) || ""}
-                            onChange={(e) => {
-                              const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])] as Record<string, unknown>[]
-                              choices[idx] = { ...c, targetStepId: e.target.value }
-                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
-                            }}
-                            placeholder="targetStepId"
-                            className="rounded border border-border px-1 py-0.5 text-xs focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])]
-                              choices.splice(idx, 1)
-                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
-                            }}
-                            className="col-span-2 text-xs text-destructive"
+                            className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none cursor-pointer"
                           >
-                            Eliminar
-                          </button>
-                        </div>
-                      )
-                    })}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])] as Record<string, unknown>[]
-                        choices.push({ id: `ch-${Date.now()}`, label: "Nueva opción", targetStepId: "step-2" })
-                        onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
-                      }}
-                      className="w-full rounded-md border border-dashed border-border py-1 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      Añadir opción
-                    </button>
-                  </div>
+                            <option value="">— seleccionar paso —</option>
+                            {allSteps.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.label} ({s.id})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={currentTarget}
+                            onChange={(e) => {
+                              const nextProps = { ...(selectedNode.props as object) } as Record<string, unknown>
+                              if ("choices" in nextProps) delete nextProps.choices
+                              nextProps.targetStepId = e.target.value
+                              onUpdateNode({ ...selectedNode, props: nextProps as any })
+                            }}
+                            placeholder="step-2"
+                            className="w-full rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none"
+                          />
+                        )}
+                        {!currentTarget && (
+                          <p role="alert" className="text-[10px] text-destructive">Destino inválido: selecciona un paso</p>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
 

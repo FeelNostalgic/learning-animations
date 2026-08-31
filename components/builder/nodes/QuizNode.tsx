@@ -51,10 +51,16 @@ export const QuizNode = memo(({ id, data, selected }: NodeProps) => {
         <p className="text-xs font-semibold text-foreground">{question}</p>
 
         {quizType === "single" ? (
-          <RadioGroup value={selectedIds[0] || ""} onValueChange={handleSingleChange} aria-label={question}>
+          <RadioGroup
+            value={selectedIds[0] || ""}
+            onValueChange={handleSingleChange}
+            aria-label={question}
+            className="nodrag nopan"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             {options.map((opt) => (
-              <div key={opt.id} className="flex items-center gap-2">
-                <RadioGroupItem value={opt.id} id={`${id}-${opt.id}`} />
+              <div key={opt.id} className="flex items-center gap-2 nodrag nopan" onPointerDown={(e) => e.stopPropagation()}>
+                <RadioGroupItem value={opt.id} id={`${id}-${opt.id}`} className="nodrag nopan" />
                 <label htmlFor={`${id}-${opt.id}`} className="text-xs text-foreground cursor-pointer">
                   {opt.text}
                 </label>
@@ -62,14 +68,15 @@ export const QuizNode = memo(({ id, data, selected }: NodeProps) => {
             ))}
           </RadioGroup>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 nodrag nopan" onPointerDown={(e) => e.stopPropagation()}>
             {options.map((opt) => (
-              <label key={opt.id} className="flex items-center gap-2 cursor-pointer">
+              <label key={opt.id} className="flex items-center gap-2 cursor-pointer nodrag nopan" onPointerDown={(e) => e.stopPropagation()}>
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(opt.id)}
                   onChange={() => handleMultiToggle(opt.id)}
-                  className="h-4 w-4 rounded border-primary"
+                  className="h-4 w-4 rounded border-primary nodrag nopan"
+                  onPointerDown={(e) => e.stopPropagation()}
                 />
                 <span className="text-xs text-foreground">{opt.text}</span>
               </label>
@@ -77,7 +84,8 @@ export const QuizNode = memo(({ id, data, selected }: NodeProps) => {
             <button
               type="button"
               onClick={handleSubmitMulti}
-              className="mt-1 rounded-md border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
+              onPointerDown={(e) => e.stopPropagation()}
+              className="nodrag nopan mt-1 rounded-md border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
             >
               Enviar respuesta
             </button>

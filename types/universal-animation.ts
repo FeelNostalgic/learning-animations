@@ -38,7 +38,7 @@ export interface QuizProps {
 }
 
 export interface BranchProps {
-  choices: BranchChoice[]
+  targetStepId: string
 }
 
 export type InteractiveProps = SliderProps | QuizProps | BranchProps
@@ -181,7 +181,8 @@ export interface UniversalInteraction {
   // For quiz
   question?: string
   options?: QuizOption[]
-  // For branch_choice
+  // For branch_choice — single automatic jump (legacy choices still supported)
+  targetStepId?: string
   choices?: BranchChoice[]
   // For drag_drop
   dragTargetNodeId?: string

@@ -23,12 +23,13 @@ describe("InteractiveNodeShell — Phase 2.3 TDD RED", () => {
     expect(container.innerHTML).toContain("data-handlepos")
   })
 
-  it("has nodrag nopan and stops propagation on pointer down", () => {
+  it("is draggable shell without global nodrag — inner controls isolate pan", () => {
     const { container } = renderShell()
     const shell = container.querySelector(".interactive-node-shell") as HTMLElement
     expect(shell).not.toBeNull()
-    expect(shell.className).toMatch(/nodrag/)
-    expect(shell.className).toMatch(/nopan/)
+    expect(shell.className).not.toMatch(/nodrag/)
+    expect(shell.className).not.toMatch(/nopan/)
+    expect(shell.className).toMatch(/cursor-grab/)
   })
 
   it("applies selected ring when selected", () => {

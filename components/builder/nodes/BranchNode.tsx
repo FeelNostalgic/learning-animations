@@ -7,12 +7,15 @@ import { InteractiveNodeShell } from "./InteractiveNodeShell"
 import type { BranchProps } from "@/types/universal-animation"
 
 export const BranchNode = memo(({ id, data, selected }: NodeProps) => {
-  const props = (data.props as BranchProps) || { choices: [] }
-  const choices = props.choices || []
+  const rawProps = (data.props as Record<string, unknown>) || {}
+  // Support legacy choices array for backwards compat — migrate to targetStepId
+  const legacyChoices = rawProps.choices as { targetStepId?: string }[] | undefined
+  const targetStepId =
+    (rawProps.targetStepId as string) || (legacyChoices?.[0]?.targetStepId as string) || ""
   const isReadOnly = Boolean((data as Record<string, unknown>).isReadOnly)
   const label = (data.label as string) || "Branch"
 
-  const hasInvalid = choices.some((c) => !c.targetStepId || c.targetStepId.trim() === "")
+  const hasInvalid = !targetStepId || targetStepId.trim() === ""
 
   return (
     <InteractiveNodeShell id={id} selected={Boolean(selected)} isReadOnly={isReadOnly} label={label}>
@@ -28,18 +31,9 @@ export const BranchNode = memo(({ id, data, selected }: NodeProps) => {
           </div>
         )}
 
-        <div className="grid gap-1.5">
-          {choices.map((choice) => (
-            <button
-              key={choice.id}
-              type="button"
-              className="flex items-center justify-between rounded-lg border border-border bg-card px-2.5 py-1.5 text-left text-xs font-medium text-foreground hover:border-primary/50 hover:bg-accent/40 cursor-pointer"
-            >
-              <span>{choice.label}</span>
-              <span className="text-[10px] text-muted-foreground">{choice.targetStepId || "—"}</span>
-            </button>
-          ))}
-          {choices.length === 0 && <p className="text-xs text-muted-foreground">Sin opciones</p>}
+        <div className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs">
+          <span className="text-muted-foreground">Salta a: </span>
+          <span className="font-mono font-semibold text-primary">{targetStepId || "— sin destino —"}</span>
         </div>
       </div>
     </InteractiveNodeShell>

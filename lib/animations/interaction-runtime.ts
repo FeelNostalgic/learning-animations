@@ -184,18 +184,54 @@ export class InteractionRuntime {
   }
 
   /**
-   * Selects a branch choice and returns the target step ID.
+   * Returns the automatic branch target for a given step (single jump).
+   * Supports legacy choices array for backwards compat.
+   */
+  public getBranchTarget(stepId: string): string | null {
+    const interaction = this.interactions.get(stepId)
+    if (!interaction || interaction.type !== "branch_choice") {
+      return null
+    }
+    const raw = interaction as unknown as Record<string, unknown>
+    // New shape: targetStepId string
+    const direct = raw.targetStepId as string | undefined
+    if (typeof direct === "string" && direct.trim() !== "") {
+      this.unlockedSteps.set(stepId, true)
+      return direct
+    }
+    // Legacy: choices array
+    const choices = raw.choices as BranchChoice[] | undefined
+    if (choices && choices.length > 0) {
+      const firstValid = choices.find((c) => c.targetStepId && c.targetStepId.trim() !== "")
+      if (firstValid) {
+        this.unlockedSteps.set(stepId, true)
+        return firstValid.targetStepId
+      }
+    }
+    return null
+  }
+
+  /**
+   * @deprecated Use getBranchTarget — kept for backwards compat with tests
    */
   public selectBranchChoice(stepId: string, choiceId: string): string | null {
     const interaction = this.interactions.get(stepId)
-    if (!interaction || interaction.type !== "branch_choice" || !interaction.choices) {
+    if (!interaction || interaction.type !== "branch_choice") {
       return null
     }
-
-    const choice = interaction.choices.find((c) => c.id === choiceId)
+    const raw = interaction as unknown as Record<string, unknown>
+    // New single-target mode: ignore choiceId, return direct target
+    const direct = raw.targetStepId as string | undefined
+    if (typeof direct === "string" && direct.trim() !== "") {
+      this.unlockedSteps.set(stepId, true)
+      return direct
+    }
+    // Legacy choices
+    const choices = raw.choices as BranchChoice[] | undefined
+    if (!choices) return null
+    const choice = choices.find((c) => c.id === choiceId)
     if (!choice) return null
     if (!choice.targetStepId || choice.targetStepId.trim() === "") return null
-
     this.unlockedSteps.set(stepId, true)
     return choice.targetStepId
   }
@@ -238,4 +274,16 @@ export class InteractionRuntime {
     this.interactions.clear()
     this.unlockedSteps.clear()
   }
+}
+
+// Singleton for builder live preview (ephemeral, reset on reload)
+let _singleton: InteractionRuntime | null = null
+export function getInteractionRuntime(): InteractionRuntime {
+  if (!_singleton) _singleton = new InteractionRuntime()
+  return _singleton
+}
+export const interactionRuntime = {
+  get instance() {
+    return getInteractionRuntime()
+  },
 }

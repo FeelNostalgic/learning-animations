@@ -126,21 +126,21 @@ describe("Interactive Nodes — Phase 3 RED", () => {
   })
 
   describe("BranchNode", () => {
-    it("renders choice buttons with fork visual", () => {
+    it("renders single target jump with fork visual", () => {
       render(
         <Wrapper>
           <BranchNode
             id="b1"
             data={{
               label: "Branch",
-              props: { choices: [{ id: "c1", label: "Ir a paso 5", targetStepId: "step-5" }] },
+              props: { targetStepId: "step-5" },
             }}
             selected={false}
           />
         </Wrapper>
       )
-      expect(screen.getByText("Ir a paso 5")).toBeInTheDocument()
-      expect(screen.getByRole("button")).toBeInTheDocument()
+      expect(screen.getByText(/salta a/i)).toBeInTheDocument()
+      expect(screen.getByText("step-5")).toBeInTheDocument()
     })
 
     it("renders invalid guard role=alert when target missing", () => {
@@ -150,7 +150,7 @@ describe("Interactive Nodes — Phase 3 RED", () => {
             id="b2"
             data={{
               label: "Branch invalid",
-              props: { choices: [{ id: "c1", label: "Bad", targetStepId: "" }] },
+              props: { targetStepId: "" },
             }}
             selected={false}
           />
@@ -160,6 +160,22 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       expect(alert).toBeInTheDocument()
       expect(alert.getAttribute("aria-live")).toBe("assertive")
       expect(alert.textContent).toMatch(/inválido/i)
+    })
+
+    it("still supports legacy choices array (backwards compat)", () => {
+      render(
+        <Wrapper>
+          <BranchNode
+            id="b3"
+            data={{
+              label: "Branch legacy",
+              props: { choices: [{ id: "c1", label: "Ir a paso 5", targetStepId: "step-5" }] } as any,
+            }}
+            selected={false}
+          />
+        </Wrapper>
+      )
+      expect(screen.getByText("step-5")).toBeInTheDocument()
     })
   })
 })
