@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { InteractionRuntime } from "@/lib/animations/interaction-runtime"
 import type { UniversalInteraction } from "@/types/universal-animation"

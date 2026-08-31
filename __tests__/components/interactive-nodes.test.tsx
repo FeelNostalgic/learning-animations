@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
-import { ReactFlowProvider } from "@xyflow/react"
+import { ReactFlowProvider, type NodeProps } from "@xyflow/react"
 import { InteractiveSliderNode } from "@/components/builder/nodes/InteractiveSliderNode"
 import { QuizNode } from "@/components/builder/nodes/QuizNode"
 import { BranchNode } from "@/components/builder/nodes/BranchNode"
@@ -10,18 +9,43 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <ReactFlowProvider>{children}</ReactFlowProvider>
 )
 
+type MockNodeProps = Partial<NodeProps> & {
+  id: string
+  data: Record<string, unknown>
+  selected: boolean
+  type?: string
+}
+
+function mockNodeProps(overrides: MockNodeProps): NodeProps {
+  return {
+    type: overrides.type ?? "test",
+    dragging: false,
+    zIndex: 1,
+    selectable: true,
+    deletable: true,
+    draggable: true,
+    isConnectable: true,
+    positionAbsoluteX: 0,
+    positionAbsoluteY: 0,
+    ...overrides,
+  } as NodeProps
+}
+
 describe("Interactive Nodes — Phase 3 RED", () => {
   describe("InteractiveSliderNode", () => {
     it("renders slider with aria-valuenow/min/max/valuetext and variableName", () => {
       render(
         <Wrapper>
           <InteractiveSliderNode
-            id="s1"
-            data={{
-              label: "Slider x",
-              props: { variableName: "x", min: 0, max: 100, step: 1, defaultValue: 50 },
-            }}
-            selected={false}
+            {...mockNodeProps({
+              id: "s1",
+              type: "interactive_slider",
+              data: {
+                label: "Slider x",
+                props: { variableName: "x", min: 0, max: 100, step: 1, defaultValue: 50 },
+              },
+              selected: false,
+            })}
           />
         </Wrapper>
       )
@@ -37,9 +61,12 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       render(
         <Wrapper>
           <InteractiveSliderNode
-            id="s2"
-            data={{ label: "Vel", props: { variableName: "vel", min: 0, max: 10, step: 1, defaultValue: 5, unit: "m/s" } }}
-            selected={false}
+            {...mockNodeProps({
+              id: "s2",
+              type: "interactive_slider",
+              data: { label: "Vel", props: { variableName: "vel", min: 0, max: 10, step: 1, defaultValue: 5, unit: "m/s" } },
+              selected: false,
+            })}
           />
         </Wrapper>
       )
@@ -53,20 +80,23 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       render(
         <Wrapper>
           <QuizNode
-            id="q1"
-            data={{
-              label: "Quiz",
-              props: {
-                quizType: "single",
-                question: "¿Cuánto es 2+2?",
-                options: [
-                  { id: "a", text: "3", isCorrect: false, feedback: "Incorrecto" },
-                  { id: "b", text: "4", isCorrect: true, feedback: "Correcto" },
-                ],
-                blocksNextStep: true,
+            {...mockNodeProps({
+              id: "q1",
+              type: "interactive_quiz",
+              data: {
+                label: "Quiz",
+                props: {
+                  quizType: "single",
+                  question: "¿Cuánto es 2+2?",
+                  options: [
+                    { id: "a", text: "3", isCorrect: false, feedback: "Incorrecto" },
+                    { id: "b", text: "4", isCorrect: true, feedback: "Correcto" },
+                  ],
+                  blocksNextStep: true,
+                },
               },
-            }}
-            selected={false}
+              selected: false,
+            })}
           />
         </Wrapper>
       )
@@ -80,20 +110,23 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       render(
         <Wrapper>
           <QuizNode
-            id="q2"
-            data={{
-              label: "Quiz multi",
-              props: {
-                quizType: "multi",
-                question: "Selecciona",
-                options: [
-                  { id: "a", text: "A", isCorrect: true, feedback: "ok" },
-                  { id: "b", text: "B", isCorrect: false, feedback: "no" },
-                ],
-                blocksNextStep: false,
+            {...mockNodeProps({
+              id: "q2",
+              type: "interactive_quiz",
+              data: {
+                label: "Quiz multi",
+                props: {
+                  quizType: "multi",
+                  question: "Selecciona",
+                  options: [
+                    { id: "a", text: "A", isCorrect: true, feedback: "ok" },
+                    { id: "b", text: "B", isCorrect: false, feedback: "no" },
+                  ],
+                  blocksNextStep: false,
+                },
               },
-            }}
-            selected={false}
+              selected: false,
+            })}
           />
         </Wrapper>
       )
@@ -104,20 +137,23 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       render(
         <Wrapper>
           <QuizNode
-            id="q3"
-            data={{
-              label: "Quiz",
-              props: {
-                quizType: "single",
-                question: "Q?",
-                options: [
-                  { id: "a", text: "A", isCorrect: true, feedback: "ok" },
-                  { id: "b", text: "B", isCorrect: false, feedback: "no" },
-                ],
-                blocksNextStep: true,
+            {...mockNodeProps({
+              id: "q3",
+              type: "interactive_quiz",
+              data: {
+                label: "Quiz",
+                props: {
+                  quizType: "single",
+                  question: "Q?",
+                  options: [
+                    { id: "a", text: "A", isCorrect: true, feedback: "ok" },
+                    { id: "b", text: "B", isCorrect: false, feedback: "no" },
+                  ],
+                  blocksNextStep: true,
+                },
               },
-            }}
-            selected={false}
+              selected: false,
+            })}
           />
         </Wrapper>
       )
@@ -130,12 +166,15 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       render(
         <Wrapper>
           <BranchNode
-            id="b1"
-            data={{
-              label: "Branch",
-              props: { targetStepId: "step-5" },
-            }}
-            selected={false}
+            {...mockNodeProps({
+              id: "b1",
+              type: "interactive_branch",
+              data: {
+                label: "Branch",
+                props: { targetStepId: "step-5" },
+              },
+              selected: false,
+            })}
           />
         </Wrapper>
       )
@@ -147,12 +186,15 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       render(
         <Wrapper>
           <BranchNode
-            id="b2"
-            data={{
-              label: "Branch invalid",
-              props: { targetStepId: "" },
-            }}
-            selected={false}
+            {...mockNodeProps({
+              id: "b2",
+              type: "interactive_branch",
+              data: {
+                label: "Branch invalid",
+                props: { targetStepId: "" },
+              },
+              selected: false,
+            })}
           />
         </Wrapper>
       )
@@ -166,12 +208,15 @@ describe("Interactive Nodes — Phase 3 RED", () => {
       render(
         <Wrapper>
           <BranchNode
-            id="b3"
-            data={{
-              label: "Branch legacy",
-              props: { choices: [{ id: "c1", label: "Ir a paso 5", targetStepId: "step-5" }] } as any,
-            }}
-            selected={false}
+            {...mockNodeProps({
+              id: "b3",
+              type: "interactive_branch",
+              data: {
+                label: "Branch legacy",
+                props: { choices: [{ id: "c1", label: "Ir a paso 5", targetStepId: "step-5" }] } as unknown as Record<string, unknown>,
+              },
+              selected: false,
+            })}
           />
         </Wrapper>
       )

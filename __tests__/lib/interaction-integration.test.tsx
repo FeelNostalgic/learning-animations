@@ -1,12 +1,26 @@
-// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
-import { ReactFlowProvider } from "@xyflow/react"
+import { ReactFlowProvider, type NodeProps } from "@xyflow/react"
 import { InteractiveSliderNode } from "@/components/builder/nodes/InteractiveSliderNode"
 import { InteractionRuntime } from "@/lib/animations/interaction-runtime"
 import { universalToReactFlow, reactFlowToUniversal } from "@/lib/animations/react-flow-adapter"
 import type { UniversalAnimationData } from "@/types/universal-animation"
 import { FloatingPropertyPanel } from "@/components/builder/floating-property-panel"
+
+function mockNodeProps(overrides: Partial<NodeProps> & { id: string; data: Record<string, unknown> }): NodeProps {
+  return {
+    type: "test",
+    dragging: false,
+    zIndex: 1,
+    selectable: true,
+    deletable: true,
+    draggable: true,
+    isConnectable: true,
+    positionAbsoluteX: 0,
+    positionAbsoluteY: 0,
+    ...overrides,
+  } as NodeProps
+}
 
 describe("Integration Phase 5.3 — slider→KaTeX, quiz gate, branch, adapter, inspector", () => {
   beforeEach(() => vi.restoreAllMocks())
@@ -17,18 +31,20 @@ describe("Integration Phase 5.3 — slider→KaTeX, quiz gate, branch, adapter, 
     const katexUpdate = vi.fn()
     // simulate KaTeX subscriber via onVariableChange + rAF
     let rafCb: FrameRequestCallback | null = null
-    const originalRAF = global.requestAnimationFrame
-    // @ts-ignore
-    global.requestAnimationFrame = (cb: FrameRequestCallback) => { rafCb = cb; return 1 as unknown as number }
+    const originalRAF = (globalThis as unknown as { requestAnimationFrame: typeof requestAnimationFrame }).requestAnimationFrame
+    ;(globalThis as unknown as { requestAnimationFrame: typeof requestAnimationFrame }).requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCb = cb
+      return 1 as unknown as number
+    }) as typeof requestAnimationFrame
     const unsub = runtime.onVariableChange("x", (v) => {
       requestAnimationFrame(() => katexUpdate(v))
     })
     runtime.setVariable("x", 42)
     expect(katexUpdate).not.toHaveBeenCalled() // rAF not flushed yet
-    if (rafCb) rafCb(0)
+    if (rafCb) (rafCb as FrameRequestCallback)(0)
     expect(katexUpdate).toHaveBeenCalledWith(42)
     unsub()
-    global.requestAnimationFrame = originalRAF
+    ;(globalThis as unknown as { requestAnimationFrame: typeof requestAnimationFrame }).requestAnimationFrame = originalRAF
   })
 
   it("quiz gate toggles Next via isStepUnlocked", () => {
@@ -87,7 +103,14 @@ describe("Integration Phase 5.3 — slider→KaTeX, quiz gate, branch, adapter, 
     const { BranchNode } = await import("@/components/builder/nodes/BranchNode")
     render(
       <ReactFlowProvider>
-        <BranchNode id="b1" data={{ label: "Branch", props: { choices: [{ id: "c1", label: "Bad", targetStepId: "" }] } }} selected={false} />
+        <BranchNode
+          {...mockNodeProps({
+            id: "b1",
+            type: "interactive_branch",
+            data: { label: "Branch", props: { choices: [{ id: "c1", label: "Bad", targetStepId: "" }] } },
+            selected: false,
+          })}
+        />
       </ReactFlowProvider>
     )
     expect(screen.getByRole("alert")).toBeInTheDocument()
@@ -96,10 +119,15 @@ describe("Integration Phase 5.3 — slider→KaTeX, quiz gate, branch, adapter, 
   it("adapter round-trip preserves interactive props", () => {
     const anim: UniversalAnimationData = {
       title: "Anim",
+      description: "Test anim",
+      discipline: "math",
       topic: "Math",
+      tags: [],
+      difficulty: "beginner",
+      is_public: false,
       nodes: [{ id: "n1", type: "interactive_slider", label: "S", x: 0, y: 0, props: { variableName: "x", min: 0, max: 10, step: 1, defaultValue: 5 } }],
       connectors: [],
-      steps: [{ id: "s1", label: "S1", description: "" }],
+      steps: [{ id: "s1", label: "S1", description: "", actions: [] }],
     }
     const { nodes, edges } = universalToReactFlow(anim)
     const recovered = reactFlowToUniversal(nodes, edges, anim.steps, { title: anim.title, topic: anim.topic })
