@@ -46,7 +46,7 @@ test.describe("Canvas Interactividad Nativa — Fase 11", () => {
     async ({ page }) => {
       await page.goto("/")
       // simulate loading old animation JSON via fetch to API not required — just verify app boots
-      await expect(page).toHaveTitle(/Learning Animations|Next/i)
+      await expect(page).toHaveTitle(/Catálogo de animaciones educativas|Animaciones educativas/i)
     }
   )
 
