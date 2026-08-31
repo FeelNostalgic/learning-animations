@@ -20,7 +20,59 @@ export const universalNodeTypeEnum = z.enum([
   "network",
   "icon",
   "container",
+  "interactive_slider",
+  "interactive_quiz",
+  "interactive_branch",
 ])
+
+export const sliderPropsSchema = z
+  .object({
+    variableName: z
+      .string()
+      .min(1)
+      .regex(/^[a-zA-Z_][\w]*$/, "variableName must start with letter or underscore"),
+    min: z.number(),
+    max: z.number(),
+    step: z.number().positive("step must be > 0"),
+    defaultValue: z.number(),
+    unit: z.string().optional(),
+  })
+  .refine((d) => d.min < d.max, { message: "min < max", path: ["max"] })
+  .refine((d) => d.defaultValue >= d.min && d.defaultValue <= d.max, {
+    message: "defaultValue must be within [min,max]",
+    path: ["defaultValue"],
+  })
+
+export const quizOptionSchemaInteractive = z.object({
+  id: z.string().min(1),
+  text: z.string().min(1),
+  isCorrect: z.boolean(),
+  feedback: z.string().min(1),
+})
+
+export const quizPropsSchema = z
+  .object({
+    quizType: z.enum(["single", "multi"]),
+    question: z.string().min(1),
+    options: z.array(quizOptionSchemaInteractive).min(2, "quiz must have at least 2 options"),
+    blocksNextStep: z.boolean().default(true),
+  })
+  .refine((d) => d.options.filter((o) => o.isCorrect).length >= 1, {
+    message: "≥1 correct",
+    path: ["options"],
+  })
+
+export const branchPropsSchema = z.object({
+  choices: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        targetStepId: z.string().min(1),
+      })
+    )
+    .min(1, "branch must have at least 1 choice"),
+})
 
 export const shapeKindEnum = z.enum([
   "circle",
@@ -44,31 +96,50 @@ export const shapeDetailsSchema = z.object({
   points: z.string().optional(),
 })
 
-export const universalNodeSchema = z.object({
-  id: z.string().min(1),
-  type: universalNodeTypeEnum,
-  label: z.string().min(1),
-  x: z.number(),
-  y: z.number(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  fill: z.string().optional(),
-  stroke: z.string().optional(),
-  strokeWidth: z.number().optional(),
-  opacity: z.number().min(0).max(1).optional(),
-  rotation: z.number().optional(),
-  scale: z.number().optional(),
-  zIndex: z.number().optional(),
-  textColor: z.string().optional(),
-  iconColor: z.string().optional(),
-  imageUrl: z.string().optional(),
-  imageFit: z.enum(["contain", "cover", "fill"]).optional(),
-  content: z.string().optional(),
-  iconName: z.string().optional(),
-  shapeDetails: shapeDetailsSchema.optional(),
-  props: z.record(z.string(), z.any()).optional(),
-  ariaLabel: z.string().optional(),
-})
+export const universalNodeSchema = z
+  .object({
+    id: z.string().min(1),
+    type: universalNodeTypeEnum,
+    label: z.string().min(1),
+    x: z.number(),
+    y: z.number(),
+    width: z.number().optional(),
+    height: z.number().optional(),
+    fill: z.string().optional(),
+    stroke: z.string().optional(),
+    strokeWidth: z.number().optional(),
+    opacity: z.number().min(0).max(1).optional(),
+    rotation: z.number().optional(),
+    scale: z.number().optional(),
+    zIndex: z.number().optional(),
+    textColor: z.string().optional(),
+    iconColor: z.string().optional(),
+    imageUrl: z.string().optional(),
+    imageFit: z.enum(["contain", "cover", "fill"]).optional(),
+    content: z.string().optional(),
+    iconName: z.string().optional(),
+    shapeDetails: shapeDetailsSchema.optional(),
+    props: z.record(z.string(), z.any()).optional(),
+    ariaLabel: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.props) return
+    let result
+    if (data.type === "interactive_slider") {
+      result = sliderPropsSchema.safeParse(data.props)
+    } else if (data.type === "interactive_quiz") {
+      result = quizPropsSchema.safeParse(data.props)
+    } else if (data.type === "interactive_branch") {
+      result = branchPropsSchema.safeParse(data.props)
+    } else {
+      return
+    }
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        ctx.addIssue({ ...issue, path: ["props", ...(issue.path as (string | number)[])], code: issue.code as any })
+      }
+    }
+  })
 
 export const connectorTypeEnum = z.enum(["straight", "bezier", "orthogonal", "arc"])
 export const connectorDirectedEnum = z.enum(["none", "forward", "backward", "bidirectional"])
