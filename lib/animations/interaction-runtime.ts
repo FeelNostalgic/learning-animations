@@ -41,10 +41,15 @@ export class InteractionRuntime {
    * Registers an interaction definition associated with a step.
    */
   public registerInteraction(stepId: string, interaction: UniversalInteraction): void {
-    this.interactions.set(stepId, interaction)
-
     if (interaction.type === "variable_slider" && interaction.variableName) {
       const varName = interaction.variableName
+      // duplicate variableName guard across steps
+      for (const [sid, inter] of this.interactions.entries()) {
+        if (sid !== stepId && (inter as unknown as Record<string, unknown>).variableName === varName) {
+          throw new Error(`Duplicate variableName: ${varName}`)
+        }
+      }
+      this.interactions.set(stepId, interaction)
       this.constraints.set(varName, {
         min: interaction.min,
         max: interaction.max,
@@ -56,8 +61,20 @@ export class InteractionRuntime {
       const initialValue = interaction.defaultValue ?? interaction.min ?? 0
       this.variables.set(varName, initialValue)
       this.unlockedSteps.set(stepId, true)
-    } else if (interaction.type === "quiz" || interaction.type === "drag_drop") {
-      // Quizzes and drag-drop are locked until solved
+      return
+    }
+
+    this.interactions.set(stepId, interaction)
+
+    if (interaction.type === "quiz") {
+      const blocksNextStep = (interaction as unknown as Record<string, unknown>).blocksNextStep
+      // blocksNextStep === false means non-blocking → always unlocked
+      if (blocksNextStep === false) {
+        this.unlockedSteps.set(stepId, true)
+      } else {
+        this.unlockedSteps.set(stepId, false)
+      }
+    } else if (interaction.type === "drag_drop") {
       this.unlockedSteps.set(stepId, false)
     } else {
       this.unlockedSteps.set(stepId, true)
@@ -150,7 +167,11 @@ export class InteractionRuntime {
       }
     }
 
-    if (selectedOption.isCorrect) {
+    const blocksNextStep = (interaction as unknown as Record<string, unknown>).blocksNextStep
+    // non-blocking quiz never gates progression
+    if (blocksNextStep === false) {
+      this.unlockedSteps.set(stepId, true)
+    } else if (selectedOption.isCorrect) {
       this.unlockedSteps.set(stepId, true)
     }
 
@@ -173,6 +194,7 @@ export class InteractionRuntime {
 
     const choice = interaction.choices.find((c) => c.id === choiceId)
     if (!choice) return null
+    if (!choice.targetStepId || choice.targetStepId.trim() === "") return null
 
     this.unlockedSteps.set(stepId, true)
     return choice.targetStepId

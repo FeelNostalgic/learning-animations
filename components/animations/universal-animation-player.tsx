@@ -215,12 +215,71 @@ export function UniversalAnimationPlayer({ animation, className }: UniversalAnim
     ] as [[number, number], [number, number]]
   }, [nodes])
 
+  // InteractionRuntime → KaTeX reactive bridge (rAF + quickSetter 60fps ≤16ms)
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const unsubs: Array<() => void> = []
+    const pending = new Map<string, number | string | boolean>()
+    let rafId: number | null = null
+    const setters = new Map<string, ReturnType<typeof gsap.quickSetter>>()
+
+    const flush = () => {
+      rafId = null
+      pending.forEach((val, varName) => {
+        const els = container.querySelectorAll(`[data-katex-variable="${varName}"]`)
+        els.forEach((el) => {
+          let setter = setters.get(varName)
+          if (!setter) {
+            try {
+              setter = gsap.quickSetter(el as Element, "textContent" as any)
+              setters.set(varName, setter)
+            } catch {
+              setter = undefined as unknown as ReturnType<typeof gsap.quickSetter>
+            }
+          }
+          if (setter) {
+            ;(setter as unknown as (v: string) => void)(String(val))
+          } else {
+            ;(el as HTMLElement).textContent = String(val)
+          }
+        })
+        // fallback for generic text interpolation: dispatch custom event for React to pick up
+        window.dispatchEvent(new CustomEvent("katex-variable-update", { detail: { variableName: varName, value: val } }))
+      })
+      pending.clear()
+    }
+
+    const schedule = (varName: string, val: number | string | boolean) => {
+      pending.set(varName, val)
+      if (rafId === null) {
+        rafId = requestAnimationFrame(flush)
+      }
+    }
+
+    // subscribe to all slider variables present in nodes
+    nodes.forEach((n) => {
+      const props = (n as unknown as Record<string, unknown>).props as Record<string, unknown> | undefined
+      const varName = props?.variableName as string | undefined
+      if (n.type === "interactive_slider" && varName) {
+        const unsub = runtimeRef.current.onVariableChange(varName, (v) => schedule(varName, v))
+        unsubs.push(unsub)
+      }
+    })
+
+    return () => {
+      unsubs.forEach((u) => u())
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, [nodes])
+
   return (
     <div
       ref={containerRef}
-      className={`relative h-full w-full select-none overflow-hidden transition-colors duration-300 [&_.react-flow__handle]:!hidden [&_.react-flow__handle]:!opacity-0 [&_.react-flow__handle]:!pointer-events-none ${className || ""}`}
+      className={`relative h-full w-full select-none overflow-hidden transition-colors duration-300 [&_.react-flow__handle]:!hidden [&_.react-flow__handle]:!opacity-0 [&_.react-flow__handle]:!pointer-events-none [&_.interactive-node-shell]:!pointer-events-auto ${className || ""}`}
       style={bgStyle}
     >
+      <style>{`.interactive-node-shell{pointer-events:auto}`}</style>
       {patternBg && (
         <div
           className="pointer-events-none absolute inset-0 z-0"

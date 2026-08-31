@@ -6,6 +6,7 @@ export default defineConfig({
     environment: "happy-dom",
     globals: true,
     include: ["__tests__/**/*.test.{ts,tsx}"],
+    setupFiles: ["./vitest.setup.ts"],
   },
   resolve: {
     alias: {
