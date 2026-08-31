@@ -494,6 +494,257 @@ export function FloatingPropertyPanel({
                 </div>
               )}
 
+              {/* Interactive slider inspector */}
+              {selectedNode.type === "interactive_slider" && (
+                <div className="space-y-2 border-t border-border pt-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Slider interactivo
+                  </label>
+                  <div>
+                    <label htmlFor="slider-variable" className="text-[10px] font-medium text-muted-foreground">
+                      Variable
+                    </label>
+                    <input
+                      id="slider-variable"
+                      type="text"
+                      value={(selectedNode.props as Record<string, unknown>)?.variableName as string || ""}
+                      onChange={(e) =>
+                        onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), variableName: e.target.value } })
+                      }
+                      placeholder="x"
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label htmlFor="slider-min" className="text-[10px] font-medium text-muted-foreground">
+                        Min
+                      </label>
+                      <input
+                        id="slider-min"
+                        type="number"
+                        value={(selectedNode.props as Record<string, unknown>)?.min as number ?? 0}
+                        onChange={(e) =>
+                          onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), min: parseFloat(e.target.value) || 0 } })
+                        }
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="slider-max" className="text-[10px] font-medium text-muted-foreground">
+                        Max
+                      </label>
+                      <input
+                        id="slider-max"
+                        type="number"
+                        value={(selectedNode.props as Record<string, unknown>)?.max as number ?? 100}
+                        onChange={(e) =>
+                          onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), max: parseFloat(e.target.value) || 0 } })
+                        }
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-medium text-muted-foreground">Step</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={(selectedNode.props as Record<string, unknown>)?.step as number ?? 1}
+                        onChange={(e) =>
+                          onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), step: parseFloat(e.target.value) || 1 } })
+                        }
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-medium text-muted-foreground">Valor por defecto</label>
+                      <input
+                        type="number"
+                        value={(selectedNode.props as Record<string, unknown>)?.defaultValue as number ?? 50}
+                        onChange={(e) =>
+                          onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), defaultValue: parseFloat(e.target.value) || 0 } })
+                        }
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-muted-foreground">Unidad (opcional)</label>
+                    <input
+                      type="text"
+                      value={(selectedNode.props as Record<string, unknown>)?.unit as string || ""}
+                      onChange={(e) =>
+                        onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), unit: e.target.value } })
+                      }
+                      placeholder="m/s"
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Interactive quiz inspector */}
+              {selectedNode.type === "interactive_quiz" && (
+                <div className="space-y-2 border-t border-border pt-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Quiz interactivo</label>
+                  <div>
+                    <label className="text-[10px] font-medium text-muted-foreground">Pregunta</label>
+                    <input
+                      type="text"
+                      value={(selectedNode.props as Record<string, unknown>)?.question as string || ""}
+                      onChange={(e) =>
+                        onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), question: e.target.value } })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-muted-foreground">Tipo</label>
+                    <div className="grid grid-cols-2 gap-1 mt-1 bg-muted/60 p-1 rounded-lg">
+                      {(["single", "multi"] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), quizType: t } })}
+                          className={`py-1 text-xs font-semibold rounded-md border transition-all cursor-pointer ${
+                            ((selectedNode.props as Record<string, unknown>)?.quizType as string || "single") === t
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground"
+                          }`}
+                        >
+                          {t === "single" ? "Single" : "Multi"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-muted-foreground">Opciones</label>
+                    {(((selectedNode.props as Record<string, unknown>)?.options as unknown[]) || []).map((opt: unknown, idx: number) => {
+                      const o = opt as Record<string, unknown>
+                      return (
+                        <div key={(o.id as string) || idx} className="flex items-center gap-1 rounded-md border border-border p-1">
+                          <input
+                            type="text"
+                            value={(o.text as string) || ""}
+                            onChange={(e) => {
+                              const opts = [...(((selectedNode.props as Record<string, unknown>)?.options as unknown[]) || [])] as Record<string, unknown>[]
+                              opts[idx] = { ...o, text: e.target.value }
+                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), options: opts } })
+                            }}
+                            placeholder="Texto"
+                            className="flex-1 rounded border border-border px-1 py-0.5 text-xs focus:outline-none"
+                          />
+                          <label className="flex items-center gap-1 text-[10px]">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(o.isCorrect)}
+                              onChange={(e) => {
+                                const opts = [...(((selectedNode.props as Record<string, unknown>)?.options as unknown[]) || [])] as Record<string, unknown>[]
+                                opts[idx] = { ...o, isCorrect: e.target.checked }
+                                onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), options: opts } })
+                              }}
+                            />
+                            Correcta
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const opts = [...(((selectedNode.props as Record<string, unknown>)?.options as unknown[]) || [])]
+                              opts.splice(idx, 1)
+                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), options: opts } })
+                            }}
+                            className="px-1 text-destructive text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const opts = [...(((selectedNode.props as Record<string, unknown>)?.options as unknown[]) || [])] as Record<string, unknown>[]
+                        opts.push({ id: `opt-${Date.now()}`, text: "Nueva opción", isCorrect: false, feedback: "Feedback" })
+                        onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), options: opts } })
+                      }}
+                      className="w-full rounded-md border border-dashed border-border py-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Añadir opción
+                    </button>
+                  </div>
+                  <label className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-2 cursor-pointer">
+                    <span className="text-xs font-medium text-foreground">Bloquea avance</span>
+                    <input
+                      type="checkbox"
+                      checked={Boolean((selectedNode.props as Record<string, unknown>)?.blocksNextStep ?? true)}
+                      onChange={(e) => onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), blocksNextStep: e.target.checked } })}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Interactive branch inspector */}
+              {selectedNode.type === "interactive_branch" && (
+                <div className="space-y-2 border-t border-border pt-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Branch interactivo</label>
+                  <div className="space-y-1">
+                    {(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || []).map((choice: unknown, idx: number) => {
+                      const c = choice as Record<string, unknown>
+                      return (
+                        <div key={(c.id as string) || idx} className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
+                          <input
+                            type="text"
+                            value={(c.label as string) || ""}
+                            onChange={(e) => {
+                              const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])] as Record<string, unknown>[]
+                              choices[idx] = { ...c, label: e.target.value }
+                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
+                            }}
+                            placeholder="Etiqueta"
+                            className="rounded border border-border px-1 py-0.5 text-xs focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            value={(c.targetStepId as string) || ""}
+                            onChange={(e) => {
+                              const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])] as Record<string, unknown>[]
+                              choices[idx] = { ...c, targetStepId: e.target.value }
+                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
+                            }}
+                            placeholder="targetStepId"
+                            className="rounded border border-border px-1 py-0.5 text-xs focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])]
+                              choices.splice(idx, 1)
+                              onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
+                            }}
+                            className="col-span-2 text-xs text-destructive"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      )
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const choices = [...(((selectedNode.props as Record<string, unknown>)?.choices as unknown[]) || [])] as Record<string, unknown>[]
+                        choices.push({ id: `ch-${Date.now()}`, label: "Nueva opción", targetStepId: "step-2" })
+                        onUpdateNode({ ...selectedNode, props: { ...(selectedNode.props as object), choices } })
+                      }}
+                      className="w-full rounded-md border border-dashed border-border py-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Añadir opción
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Delete Node Button */}
               <div className="pt-2 border-t border-border">
                 <Button

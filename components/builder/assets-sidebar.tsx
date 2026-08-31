@@ -16,6 +16,9 @@ import {
   Upload,
   Link2,
   Loader2,
+  Sliders,
+  HelpCircle,
+  GitBranch,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { UniversalNode, UniversalNodeType } from "@/types/universal-animation"
@@ -24,7 +27,7 @@ interface AssetsSidebarProps {
   onAddNode: (type: UniversalNodeType, preset?: Partial<UniversalNode>) => void
 }
 
-type TabKey = "geometry" | "math" | "text" | "images" | "network"
+type TabKey = "geometry" | "math" | "text" | "images" | "network" | "interactivity"
 
 export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("geometry")
@@ -109,7 +112,7 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
         </p>
 
         {/* Categories Tabs */}
-        <div className="grid grid-cols-5 gap-1 mt-2.5 bg-muted/60 p-1 rounded-lg text-center">
+        <div className="grid grid-cols-6 gap-1 mt-2.5 bg-muted/60 p-1 rounded-lg text-center">
           <button
             onClick={() => setActiveTab("geometry")}
             className={`py-1 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
@@ -159,6 +162,16 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
             }`}
           >
             Redes
+          </button>
+          <button
+            onClick={() => setActiveTab("interactivity")}
+            className={`py-1 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
+              activeTab === "interactivity"
+                ? "bg-card text-primary shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Interactividad
           </button>
         </div>
       </div>
@@ -470,6 +483,87 @@ export function AssetsSidebar({ onAddNode }: AssetsSidebarProps) {
                 <div>
                   <h3 className="text-xs font-semibold text-foreground">Switch</h3>
                   <p className="text-[10px] text-muted-foreground">Conmutador L2</p>
+                </div>
+              </div>
+              <Plus className="size-3.5 text-muted-foreground" />
+            </button>
+          </div>
+        )}
+
+        {activeTab === "interactivity" && (
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              onClick={() =>
+                onAddNode("interactive_slider", {
+                  label: "Slider",
+                  width: 220,
+                  height: 110,
+                  props: { variableName: "x", min: 0, max: 100, step: 1, defaultValue: 50 },
+                })
+              }
+              className="flex items-center justify-between rounded-xl border border-border bg-card p-2 text-left transition-all hover:border-primary/50 hover:bg-accent/40 cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                  <Sliders className="size-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-foreground">Slider</h3>
+                  <p className="text-[10px] text-muted-foreground">Control deslizante reactivo</p>
+                </div>
+              </div>
+              <Plus className="size-3.5 text-muted-foreground" />
+            </button>
+
+            <button
+              onClick={() =>
+                onAddNode("interactive_quiz", {
+                  label: "Quiz",
+                  width: 240,
+                  height: 160,
+                  props: {
+                    quizType: "single",
+                    question: "Pregunta nueva",
+                    options: [
+                      { id: "opt-1", text: "Opción A", isCorrect: true, feedback: "¡Correcto!" },
+                      { id: "opt-2", text: "Opción B", isCorrect: false, feedback: "Inténtalo de nuevo" },
+                    ],
+                    blocksNextStep: true,
+                  },
+                })
+              }
+              className="flex items-center justify-between rounded-xl border border-border bg-card p-2 text-left transition-all hover:border-primary/50 hover:bg-accent/40 cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+                  <HelpCircle className="size-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-foreground">Quiz</h3>
+                  <p className="text-[10px] text-muted-foreground">Pregunta single/multi</p>
+                </div>
+              </div>
+              <Plus className="size-3.5 text-muted-foreground" />
+            </button>
+
+            <button
+              onClick={() =>
+                onAddNode("interactive_branch", {
+                  label: "Branch",
+                  width: 200,
+                  height: 120,
+                  props: { choices: [{ id: "ch-1", label: "Ir a paso", targetStepId: "step-2" }] },
+                })
+              }
+              className="flex items-center justify-between rounded-xl border border-border bg-card p-2 text-left transition-all hover:border-primary/50 hover:bg-accent/40 cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <GitBranch className="size-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-foreground">Branch</h3>
+                  <p className="text-[10px] text-muted-foreground">Bifurcación narrativa</p>
                 </div>
               </div>
               <Plus className="size-3.5 text-muted-foreground" />
