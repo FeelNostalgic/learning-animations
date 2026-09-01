@@ -57,16 +57,16 @@ learning-animations/
 
 ```bash
 # 1. Instalar dependencias
-npm install
+pnpm install
 
 # 2. Iniciar servidor de desarrollo en puerto 3001
-npm run dev
+pnpm dev
 
 # 3. Ejecutar pruebas unitarias
-npm test
+pnpm test
 
 # 4. Compilar para producción
-npm run build
+pnpm build
 ```
 
 ---

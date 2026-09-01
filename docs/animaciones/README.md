@@ -53,7 +53,7 @@ De 3 a 5 pasos es ideal. Algo más corto se siente incompleto, algo más largo p
 Sí. Copia y adapta la estructura de `arp-animation.tsx`. Los colores `C` y posiciones `N` son constantes de diseño.
 
 **¿Dónde debo pedir ayuda?**
-Mira el código existente en `arp-animation.tsx`, la documentación de GSAP, y prueba localmente con `npm run dev`.
+Mira el código existente en `arp-animation.tsx`, la documentación de GSAP, y prueba localmente con `pnpm dev`.
 
 ---
 
