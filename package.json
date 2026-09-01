@@ -1,8 +1,9 @@
 {
   "name": "learning-animations",
-  "version": "1.19.4",
+  "version": "1.19.5",
   "description": "Educational Interactive Network Animations",
   "type": "module",
+  "packageManager": "pnpm@11.24.0",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",

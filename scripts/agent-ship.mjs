@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from "child_process"
+import { execSync } from "child_process"
 
 /**
  * Agentic Git Ship & CI Sync Automation
@@ -57,8 +57,8 @@ async function main() {
   // 2. Validate commit message
   if (!commitMessage) {
     console.error("❌ Por favor proporciona un mensaje de commit.")
-    console.log('👉 Uso: npm run ship -- "tipo(scope): descripción"')
-    console.log('   Ejemplo: npm run ship -- "feat(ui): añadir nuevo botón de acción"')
+    console.log('👉 Uso: pnpm ship -- "tipo(scope): descripción"')
+    console.log('   Ejemplo: pnpm ship -- "feat(ui): añadir nuevo botón de acción"')
     process.exit(1)
   }
 
@@ -127,7 +127,7 @@ async function main() {
   }
 
   if (!targetRun) {
-    console.log("ℹ️ No se detectó workflow activo. Puedes ejecutar 'npm run ci:sync' más tarde.")
+    console.log("ℹ️ No se detectó workflow activo. Puedes ejecutar 'pnpm ci:sync' más tarde.")
     return
   }
 

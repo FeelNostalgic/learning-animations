@@ -869,7 +869,7 @@ Antes de considerar tu animación completada, verifica:
 ### ¿Cómo pruebo mi animación localmente?
 
 ```bash
-npm run dev
+pnpm dev
 # Abre http://localhost:3000/animations/tu-slug
 ```
 
