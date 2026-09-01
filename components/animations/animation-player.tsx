@@ -37,6 +37,7 @@ import {
   type PlaybackSpeedLabel,
   resolvePlaybackSpeed,
 } from "@/lib/animations/playback"
+import { usePlayerSpeed } from "@/lib/hooks/use-preferences"
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -99,6 +100,27 @@ export function AnimationPlayer({
   const [currentStep, setCurrentStep] = useState(0)
   const [speedLabel, setSpeedLabel] = useState<PlaybackSpeedLabel>(1)
   const [loop, setLoop] = useState(false)
+
+  const [storedSpeed, setStoredSpeed] = usePlayerSpeed()
+  const hasHydratedSpeedRef = useRef(false)
+
+  // hydrate player_speed after mount (SSR guard via hook's useEffect)
+  useEffect(() => {
+    if (hasHydratedSpeedRef.current) return
+    if (storedSpeed !== null && storedSpeed !== undefined) {
+      const parsed = typeof storedSpeed === "string" ? Number(storedSpeed) : (storedSpeed as number)
+      if (!Number.isNaN(parsed)) {
+        setSpeedLabel(parsed as PlaybackSpeedLabel)
+      }
+    }
+    hasHydratedSpeedRef.current = true
+  }, [storedSpeed])
+
+  // persist player_speed via debounced hook
+  useEffect(() => {
+    if (!hasHydratedSpeedRef.current) return
+    setStoredSpeed(String(speedLabel))
+  }, [speedLabel, setStoredSpeed])
   const [tlDuration, setTlDuration] = useState(0)
   const [zoom, setZoom] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)

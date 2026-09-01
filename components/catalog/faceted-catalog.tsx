@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
+import { useCatalogFilters } from "@/lib/hooks/use-preferences"
 import {
   Search,
   Filter,
@@ -62,6 +63,34 @@ export function FacetedCatalog({ officialItems, communityItems }: FacetedCatalog
   const [selectedTopic, setSelectedTopic] = useState<string>("all")
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all")
   const [selectedSource, setSelectedSource] = useState<"all" | "official" | "community">("all")
+
+  const [storedFilters, setStoredFilters] = useCatalogFilters()
+  const hasHydratedRef = useRef(false)
+
+  // hydrate from persisted catalog_filters after mount (SSR guard via hook's useEffect)
+  useEffect(() => {
+    if (hasHydratedRef.current) return
+    if (storedFilters) {
+      if (typeof storedFilters.searchQuery === "string") setSearchQuery(storedFilters.searchQuery)
+      if (typeof storedFilters.selectedDiscipline === "string") setSelectedDiscipline(storedFilters.selectedDiscipline)
+      if (typeof storedFilters.selectedTopic === "string") setSelectedTopic(storedFilters.selectedTopic)
+      if (typeof storedFilters.selectedDifficulty === "string") setSelectedDifficulty(storedFilters.selectedDifficulty)
+      if (storedFilters.selectedSource) setSelectedSource(storedFilters.selectedSource as "all" | "official" | "community")
+    }
+    hasHydratedRef.current = true
+  }, [storedFilters])
+
+  // persist to shared catalog_filters key (debounced via hook)
+  useEffect(() => {
+    if (!hasHydratedRef.current) return
+    setStoredFilters({
+      searchQuery,
+      selectedDiscipline,
+      selectedTopic,
+      selectedDifficulty,
+      selectedSource,
+    })
+  }, [searchQuery, selectedDiscipline, selectedTopic, selectedDifficulty, selectedSource, setStoredFilters])
 
   // Unify official and community animations
   const allItems: UnifiedCatalogItem[] = useMemo(() => {

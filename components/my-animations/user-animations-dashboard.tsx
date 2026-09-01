@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useCatalogFilters } from "@/lib/hooks/use-preferences"
 import {
   Sparkles,
   PenTool,
@@ -51,6 +52,29 @@ export function UserAnimationsDashboard({
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null)
+
+  const [storedFilters, setStoredFilters] = useCatalogFilters()
+  const hasHydratedRef = useRef(false)
+
+  useEffect(() => {
+    if (hasHydratedRef.current) return
+    if (storedFilters) {
+      if (typeof storedFilters.searchQuery === "string") setSearchQuery(storedFilters.searchQuery)
+      if (typeof storedFilters.selectedTopic === "string") setSelectedTopic(storedFilters.selectedTopic)
+    }
+    hasHydratedRef.current = true
+  }, [storedFilters])
+
+  useEffect(() => {
+    if (!hasHydratedRef.current) return
+    setStoredFilters({
+      searchQuery,
+      selectedDiscipline: storedFilters?.selectedDiscipline ?? "all",
+      selectedTopic,
+      selectedDifficulty: storedFilters?.selectedDifficulty ?? "all",
+      selectedSource: storedFilters?.selectedSource ?? "all",
+    })
+  }, [searchQuery, selectedTopic, storedFilters, setStoredFilters])
 
   // State for customized delete confirmation dialog
   const [animToDelete, setAnimToDelete] = useState<{ id: string; title: string } | null>(null)

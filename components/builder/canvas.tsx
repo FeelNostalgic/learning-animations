@@ -9,7 +9,6 @@ import {
   BackgroundVariant,
   ConnectionMode,
   ViewportPortal,
-  useViewport,
   type Node,
   type Edge,
   type OnNodesChange,
@@ -17,7 +16,6 @@ import {
   type OnConnect,
   type NodeMouseHandler,
   type EdgeMouseHandler,
-  type Viewport,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { nodeTypes } from "./nodes"
@@ -118,8 +116,6 @@ export function Canvas({
   onDuplicateNode,
   onUpdateNodeZIndex,
 }: CanvasProps) {
-  // keep useViewport wired for builder_zoom_pan capture (import verified via tests)
-  void useViewport
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)

@@ -12,7 +12,8 @@ describe("Canvas viewport wiring", () => {
     expect(source).toContain("defaultViewport")
     expect(source).toContain("onViewportChange")
     expect(source).toContain("Viewport")
-    expect(source).toContain("useViewport")
+    // useViewport was removed as unused (W1) — Viewport type + defaultViewport/onViewportChange cover persistence
+    expect(source).not.toContain("useViewport")
   })
 
   it("persists viewport via useDebouncedLocalStorage or usePreferences", async () => {
