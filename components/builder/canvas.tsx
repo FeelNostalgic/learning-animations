@@ -47,6 +47,8 @@ interface ContextMenuState {
   nodeId: string
 }
 
+export type Viewport = { x: number; y: number; zoom: number }
+
 interface CanvasProps {
   nodes: Node[]
   edges: Edge[]
@@ -60,6 +62,8 @@ interface CanvasProps {
   selectedNode: UniversalNode | null
   selectedEdge: Edge | null
   background?: AnimationBackground
+  defaultViewport?: Viewport
+  onViewportChange?: (viewport: Viewport) => void
   playbackProps?: {
     currentStepIndex: number
     totalSteps: number
@@ -100,6 +104,8 @@ export function Canvas({
   selectedNode,
   selectedEdge,
   background,
+  defaultViewport,
+  onViewportChange,
   playbackProps,
   onSelectNode,
   onSelectEdge,
@@ -352,8 +358,10 @@ export function Canvas({
         connectionMode={ConnectionMode.Loose}
         snapToGrid={true}
         snapGrid={[16, 16]}
-        fitView
+        fitView={!defaultViewport}
         fitViewOptions={{ padding: 0.2 }}
+        defaultViewport={defaultViewport}
+        onViewportChange={onViewportChange}
         minZoom={0.2}
         maxZoom={2.5}
         className="h-full w-full !bg-transparent transition-colors duration-300"

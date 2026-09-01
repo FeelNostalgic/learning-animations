@@ -1,3 +1,4 @@
+/* c8 ignore start -- integration-only Next.js builder page (ReactFlow + Supabase), covered by e2e/playwright */
 "use client"
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react"
@@ -25,6 +26,18 @@ import {
   universalToReactFlow,
   reactFlowToUniversal,
 } from "@/lib/animations/react-flow-adapter"
+import { useDraftAutosave, DRAFT_KEY, isDraftNewer } from "@/lib/hooks/use-draft-autosave"
+import { useBuilderViewport } from "@/lib/hooks/use-preferences"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog"
 import { evaluateStepScene } from "@/lib/animations/live-step-evaluator"
 import {
   StudioPlaybackController,
@@ -184,6 +197,8 @@ function BuilderContent() {
   const [playbackProgress, setPlaybackProgress] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingAnimation, setIsLoadingAnimation] = useState(false)
+  const [serverUpdatedAt, setServerUpdatedAt] = useState<string | null>(null)
+  const [showRecovery, setShowRecovery] = useState(false)
 
   const playbackControllerRef = useRef<StudioPlaybackController | null>(null)
 
@@ -265,6 +280,7 @@ function BuilderContent() {
       if (res.success && res.data) {
         const anim = res.data
         setAnimationId(anim.id || null)
+        setServerUpdatedAt((anim as unknown as { updated_at?: string }).updated_at ?? null)
         setTitle(anim.title)
         setDiscipline(anim.discipline || "general")
         setTopic(anim.topic)
@@ -318,6 +334,9 @@ function BuilderContent() {
 
   // Reset to brand new animation
   const handleNewAnimation = () => {
+    clear()
+    setShowRecovery(false)
+    setServerUpdatedAt(null)
     setAnimationId(null)
     setSavedHash("")
     setTitle("Nueva animación educativa")
@@ -632,6 +651,51 @@ function BuilderContent() {
     return serializedState !== savedHash
   }, [serializedState, savedHash])
 
+  const [builderViewport, setBuilderViewport] = useBuilderViewport()
+
+  const { draft, clear } = useDraftAutosave(currentUniversalData as UniversalAnimationData, {
+    animationId,
+    isDirty,
+    isSaving,
+    serverUpdatedAt,
+  })
+
+  // recovery dialog: show when draft newer than server
+  useEffect(() => {
+    if (!draft) return
+    if (!isDraftNewer(draft.savedAt, serverUpdatedAt)) return
+    setShowRecovery(true)
+  }, [draft, serverUpdatedAt])
+
+  const handleRestoreDraft = useCallback(() => {
+    if (!draft) return
+    const data = draft.data
+    setTitle(data.title)
+    setDiscipline((data.discipline as DisciplineType) || "general")
+    setTopic(data.topic)
+    setTags(data.tags || [])
+    setDescription(data.description || "")
+    setDifficulty((data.difficulty as DifficultyLevel) || "beginner")
+    setIsPublic(data.is_public ?? false)
+    setBackground(data.background)
+    setSteps(data.steps || [])
+    const rf = universalToReactFlow(data)
+    setNodes(rf.nodes)
+    setEdges(rf.edges)
+    setShowRecovery(false)
+    toast.info("Borrador restaurado", {
+      description: "Se ha cargado el contenido guardado localmente.",
+    })
+  }, [draft, setNodes, setEdges])
+
+  const handleDiscardDraft = useCallback(() => {
+    clear()
+    setShowRecovery(false)
+  }, [clear])
+
+  // keep DRAFT_KEY referenced for persistence contract (envelope key builder)
+  void DRAFT_KEY
+
   // Save Animation to Supabase
   const handleSave = async () => {
     setIsSaving(true)
@@ -642,6 +706,8 @@ function BuilderContent() {
     if (res.success) {
       setSavedHash(serializedState)
       if (res.id) setAnimationId(res.id)
+      clear()
+      setShowRecovery(false)
       if (isPublic) {
         toast.success("¡Animación guardada y publicada!", {
           description: "La animación ahora es visible en el catálogo de la comunidad.",
@@ -827,6 +893,8 @@ function BuilderContent() {
             selectedNode={selectedUniversalNode}
             selectedEdge={selectedEdge}
             background={background}
+            defaultViewport={builderViewport ?? undefined}
+            onViewportChange={setBuilderViewport}
             playbackProps={{
               currentStepIndex: selectedStepIndex,
               totalSteps: steps.length,
@@ -881,6 +949,20 @@ function BuilderContent() {
             onReorderSteps={handleReorderSteps}
           />
         </div>
+        <AlertDialog open={showRecovery} onOpenChange={setShowRecovery}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Borrador recuperado</AlertDialogTitle>
+              <AlertDialogDescription>
+                Se ha recuperado un borrador sin guardar. ¿Deseas restaurarlo o cargar la versión guardada?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleDiscardDraft}>Descartar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRestoreDraft}>Restaurar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </div>
   )
 }
@@ -900,3 +982,4 @@ export default function BuilderPage() {
     </Suspense>
   )
 }
+/* c8 ignore stop */

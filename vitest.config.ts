@@ -7,6 +7,11 @@ export default defineConfig({
     globals: true,
     include: ["__tests__/**/*.test.{ts,tsx}"],
     setupFiles: ["./vitest.setup.ts"],
+    coverage: {
+      provider: "v8",
+      include: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+      exclude: ["**/*.d.ts", ".next/**", "coverage/**"],
+    },
   },
   resolve: {
     alias: {

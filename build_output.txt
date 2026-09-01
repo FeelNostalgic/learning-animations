@@ -1,0 +1,57 @@
+﻿
+> learning-animations@1.19.3 build
+> next build
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+node.exe : ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: 
+https://nextjs.org/docs/messages/middleware-to-proxy
+En línea: 1 Carácter: 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ÔÜá The "middle...leware-to-proxy:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 5.1s
+  Running TypeScript ...
+  Collecting page data using 23 workers ...
+  Generating static pages using 23 workers (0/64) ...
+  Generating static pages using 23 workers (16/64) 
+  Generating static pages using 23 workers (32/64) 
+  Generating static pages using 23 workers (48/64) 
+Ô£ô Generating static pages using 23 workers (64/64) in 1003.7ms
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî Ôùï /
+Ôö£ Ôùï /_not-found
+Ôö£ ãÆ /animations
+Ôö£ ÔùÅ /animations/[slug]
+Ôöé Ôö£ /animations/arp
+Ôöé Ôö£ /animations/csma-cd
+Ôöé Ôö£ /animations/csma-ca
+Ôöé Ôöö [+23 more paths]
+Ôö£ ãÆ /api/upload
+Ôö£ ãÆ /auth/callback
+Ôö£ Ôùï /builder
+Ôö£ Ôùï /docs/showcase
+Ôö£ ÔùÅ /embed/[slug]
+Ôöé Ôö£ /embed/arp
+Ôöé Ôö£ /embed/csma-cd
+Ôöé Ôö£ /embed/csma-ca
+Ôöé Ôöö [+23 more paths]
+Ôö£ Ôùï /forgot-password
+Ôö£ Ôùï /login
+Ôö£ ãÆ /my-animations
+Ôö£ ãÆ /my-animations/[id]
+Ôöö Ôùï /signup
+
+
+ãÆ Proxy (Middleware)
+
+Ôùï  (Static)   prerendered as static content
+ÔùÅ  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ãÆ  (Dynamic)  server-rendered on demand
+
