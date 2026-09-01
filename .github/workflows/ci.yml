@@ -126,7 +126,9 @@ jobs:
           echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
 
           if [ -n "$BUMP_TYPE" ]; then
-            NEW_VERSION=$(pnpm version $BUMP_TYPE --no-git-tag-version)
+            pnpm version $BUMP_TYPE --no-git-tag-version
+            RAW_VERSION=$(node -p "require('./package.json').version")
+            NEW_VERSION="v$RAW_VERSION"
             echo "New version: $NEW_VERSION"
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
             
