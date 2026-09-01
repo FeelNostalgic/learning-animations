@@ -6,6 +6,20 @@ const opt = <T extends z.ZodTypeAny>(schema: T) => z.preprocess(nilToUndef, sche
 const optDefault = <T extends z.ZodTypeAny>(schema: T, def: unknown) =>
   z.preprocess(nilToUndef, (schema as any).default(def))
 
+function deepNilToUndef(value: unknown): unknown {
+  if (value === null || value === undefined) return undefined
+  if (Array.isArray(value)) return value.map(deepNilToUndef)
+  if (typeof value === "object") {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const cleaned = deepNilToUndef(v)
+      out[k] = cleaned
+    }
+    return out
+  }
+  return value
+}
+
 export const disciplineEnum = z.enum([
   "math",
   "physics",
@@ -309,3 +323,8 @@ export type UniversalConnectorInput = z.infer<typeof universalConnectorSchema>
 export type UniversalStepInput = z.infer<typeof universalStepSchema>
 export type UniversalActionInput = z.infer<typeof universalActionSchema>
 export type UniversalInteractionInput = z.infer<typeof universalInteractionSchema>
+
+export function safeParseUniversalData(data: unknown) {
+  const cleaned = deepNilToUndef(data)
+  return universalAnimationSchema.safeParse(cleaned)
+}
