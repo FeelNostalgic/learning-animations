@@ -1,0 +1,73 @@
+name: Propuesta de animación o funcionalidad
+description: Proponer un protocolo que falta, o una mejora al proyecto
+labels: ["enhancement", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Las **animaciones de protocolos que faltan** son la contribución que más
+        apologise. Si se te ocurre una que no está, empieza por aquí.
+
+        Protocolos cubiertos hoy: ARP, Wi-Fi 802.11, CSMA/CD, CSMA/CA, Ethernet,
+        PPP, OSI vs TCP/IP, IP (4 variantes), RIP, OSPF, BGP, ICMP, TCP, UDP,
+        HTTP/HTTPS, DNS, DHCP, FTP, TFTP, SMTP, POP3 y SSH.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tipo de propuesta
+      options:
+        - Nueva animación de protocolo
+        - Mejora de una animación existente
+        - Funcionalidad del builder
+        - Mejora del reproductor o la interfaz
+        - Accesibilidad
+        - Documentación o traducción
+        - Otro
+    validations:
+      required: true
+
+  - type: input
+    id: title
+    attributes:
+      label: Título
+      description: Si es una animación, el nombre del protocolo.
+      placeholder: Protocolo QUIC
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué problema resuelve?
+      description: Qué falta o qué falla hoy. Para una animación: ¿en qué se queda corto lo existente?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Cómo lo resolverías. Si es una animación, en cuántos pasos lo dividirías.
+      placeholder: |
+        1. Handshake inicial con SNI y ALPN
+        2. Cifrado de la sesión con TLS 1.3
+        3. multiplexing de flujos sobre una sola conexión
+        4. control de congestión distinto a TCP
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: Qué has mirado ya y por qué no sirve.
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: ¿Quieres contribuirlo?
+      options:
+        - label: Me gustaría abrir una PR con esto.
+        - label: Prefiero que lo implemente el mantenedor.
+        - label: Solo es una idea, puedo completar una spec.

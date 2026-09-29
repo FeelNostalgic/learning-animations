@@ -48,7 +48,11 @@ opencode.json
 /test-results
 .playwright-mcp
 .mcp.json
+
+# build & tooling logs
 test_output*.txt
+build_output*.txt
+tsc_output*.txt
 
 # agents
 .agents/settings.local.json

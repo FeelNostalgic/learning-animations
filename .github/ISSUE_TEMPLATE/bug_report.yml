@@ -1,0 +1,90 @@
+name: Reportar un bug
+description: Algo no funciona como debería
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar. Cuanto más preciso seas, más rápido lo arreglamos.
+
+        **Si crees que es un problema de seguridad, no uses esta plantilla.**
+        Sigue [`SECURITY.md`](../blob/main/SECURITY.md) en su lugar.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: ¿Qué ocurre?
+      description: Qué falla, y qué esperabas que pasara en su lugar.
+      placeholder: Al reproducir una animación, la línea de tiempo se salta el paso 3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: Desde un estado limpio. Incluye la URL o el slug de la animación.
+      placeholder: |
+        1. Ir a /animations/tcp
+        2. Pulsar "avanzar" tres veces
+        3. El paso 3 aparece vacío
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      description: Qué debería haber pasado.
+
+  - type: input
+    id: slug
+    attributes:
+      label: Slug de la animación
+      description: Si el bug afecta a una animación concreta, indica su slug (por ejemplo `arp`).
+      placeholder: arp
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: ¿Dónde ocurre?
+      options:
+        - Animaciones oficiales
+        - Builder / editor visual
+        - Cuentas de usuario / login
+        - Catálogo comunitario
+        - Vista embed / iframe
+        - CI o despliegue
+        - Documentación
+        - Otro
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errores de consola
+      description: Pega la salida de la consola del navegador. Es lo que más ayuda.
+      render: shell
+
+  - type: input
+    id: browser
+    attributes:
+      label: Navegador y versión
+      placeholder: Firefox 141 / Chrome 130 / Safari 17
+
+  - type: input
+    id: env
+    attributes:
+      label: Entorno
+      description: ¿Con Supabase y R2 configurados, o en modo standalone?
+      placeholder: Con Supabase y R2 / Solo Supabase / Standalone
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Comprobaciones
+      options:
+        - label: He buscado un issue existente y no está reportado.
+          required: true
+        - label: He probado en la rama `main` y no solo en `dev`.
