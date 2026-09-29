@@ -2,6 +2,25 @@
   "name": "learning-animations",
   "version": "1.19.5",
   "description": "Educational Interactive Network Animations",
+  "license": "MIT",
+  "author": "Francisco Aragónes",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FeelNostalgic/learning-animations.git"
+  },
+  "homepage": "https://github.com/FeelNostalgic/learning-animations#readme",
+  "bugs": {
+    "url": "https://github.com/FeelNostalgic/learning-animations/issues"
+  },
+  "keywords": [
+    "network-protocols",
+    "animation",
+    "education",
+    "networking",
+    "nextjs",
+    "gsap",
+    "visualization"
+  ],
   "type": "module",
   "packageManager": "pnpm@11.24.0",
   "scripts": {
